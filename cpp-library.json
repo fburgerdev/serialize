@@ -1,0 +1,10 @@
+{
+    "project": "Example",
+    "author": "Florian Burger (git@fburgerdev)",
+    
+    "tests": {
+        "test": {
+            "files": [ "test.cpp" ]
+        }
+    }
+}
