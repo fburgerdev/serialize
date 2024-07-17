@@ -1,10 +1,10 @@
 {
-    "project": "Example",
-    "author": "Florian Burger (git@fburgerdev)",
-    
-    "tests": {
-        "test": {
-            "files": [ "test.cpp" ]
-        }
-    }
+    "project": "serialize",
+    "author": "florian burger (git@fburgerdev)",
+    "namespace": "ASST",
+
+    "tests": [
+        { "name": "test", "files": [ "test.cpp" ] },
+        { "name": "ecs", "files": [ "ecs.cpp" ] }
+    ]
 }

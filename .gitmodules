@@ -1,3 +1,4 @@
 [submodule "cpp-library"]
 	path = cpp-library
-	url = git@github.com:fburgerdev/cpp-library
+	url = https://github.com/fburgerdev/cpp-library.git
+	branch = dev
