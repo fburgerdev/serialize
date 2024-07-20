@@ -8,4 +8,20 @@ namespace ASST {
     List<string> split(const string& source, Set<char> delimiters);
     // removeWhitespaces
     string removeWhitespaces(const string& source);
+    // indent
+    string indent(const string& source);
+
+    // EscapeSequences
+    inline const List<Pair<string, string>> EscapeSequences = {
+        { "\\", "\\\\" },
+        { "\'", "\\\'" },
+        { "\"", "\\\"" },
+        { "\?", "\\\?" },
+        { "\a", "\\a" },
+        { "\b", "\\b" },
+        { "\f", "\\f" },
+        { "\n", "\\n" },
+        { "\r", "\\r" },
+        { "\v", "\\v" },
+    };
 }

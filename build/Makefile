@@ -12,18 +12,18 @@ endif
 
 ifeq ($(config),debug)
   serialize_config = debug
-  ecs_config = debug
+  test_config = debug
 endif
 ifeq ($(config),release)
   serialize_config = release
-  ecs_config = release
+  test_config = release
 endif
 ifeq ($(config),dist)
   serialize_config = dist
-  ecs_config = dist
+  test_config = dist
 endif
 
-PROJECTS := serialize ecs
+PROJECTS := serialize test
 
 .PHONY: all clean help $(PROJECTS) 
 
@@ -35,15 +35,15 @@ ifneq (,$(serialize_config))
 	@${MAKE} --no-print-directory -C . -f serialize.make config=$(serialize_config)
 endif
 
-ecs: serialize
-ifneq (,$(ecs_config))
-	@echo "==== Building ecs ($(ecs_config)) ===="
-	@${MAKE} --no-print-directory -C . -f ecs.make config=$(ecs_config)
+test: serialize
+ifneq (,$(test_config))
+	@echo "==== Building test ($(test_config)) ===="
+	@${MAKE} --no-print-directory -C . -f test.make config=$(test_config)
 endif
 
 clean:
 	@${MAKE} --no-print-directory -C . -f serialize.make clean
-	@${MAKE} --no-print-directory -C . -f ecs.make clean
+	@${MAKE} --no-print-directory -C . -f test.make clean
 
 help:
 	@echo "Usage: make [config=name] [target]"
@@ -57,6 +57,6 @@ help:
 	@echo "   all (default)"
 	@echo "   clean"
 	@echo "   serialize"
-	@echo "   ecs"
+	@echo "   test"
 	@echo ""
 	@echo "For more information, see https://github.com/premake/premake-core/wiki"

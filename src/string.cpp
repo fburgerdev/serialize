@@ -10,7 +10,7 @@ namespace ASST {
                 break;
             }
             source.replace(index, from.length(), to);
-            index += from.length();;
+            index += to.length();
         }
         return source;
     }
@@ -62,5 +62,9 @@ namespace ASST {
             }
         }
         return result;
+    }
+    // indent
+    string indent(const string& source) {
+        return stringReplace(source, "\n", "\n    ");
     }
 }

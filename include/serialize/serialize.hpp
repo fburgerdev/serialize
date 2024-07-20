@@ -36,6 +36,10 @@ namespace ASST {
     using uint64 = std::uint64_t;
     using string = std::string;
     using strview = std::string_view;
+    template<typename T1, typename T2>
+    using Pair = std::pair<T1, T2>;
+    template<typename... TArgs>
+    using Tuple = std::tuple<TArgs...>;
     template<typename T, address N>
     using Array = std::array<T, N>;
     template<typename T>
@@ -80,6 +84,8 @@ namespace ASST {
     using std::ifstream;
     using std::ofstream;
     using strstream = std::stringstream;
+    using istrstream = std::istringstream;
+    using ostrstream = std::ostringstream;
     using std::mutex;
     using std::recursive_mutex;
     using std::shared_mutex;
@@ -99,39 +105,24 @@ namespace ASST {
     using atomic_uint32 = std::atomic_uint32_t;
     using atomic_uint64 = std::atomic_uint64_t;
 }
-// #include "concept.hpp" (HPPMERGE)
-#include <concepts>
-namespace ASST {
-    struct VoidReflector {
-        template<typename T>
-        void reflect(const string& str, const T& value) {
-        }
-    };
-    template<typename T>
-    concept NumericType= std::integral<T> || std::floating_point<T>;
-    template<class T>
-    concept StringType = std::is_convertible_v<T, strview>;
-    template<typename T>
-    concept IterableType = requires(T x, const T y) {
-        { x.begin() };
-        { x.end() };
-        { y.begin() };
-        { y.end() };
-    };
-    template<typename T>
-    concept ReflectableType = requires(T x, VoidReflector reflector) {
-        { x.reflect(reflector) };
-    };
-    template<typename T>
-    constexpr bool isPair = false;
-    template<typename T, typename U>
-    constexpr bool isPair<std::pair<T, U>> = true;
-}
 // #include "string.hpp" (HPPMERGE)
 namespace ASST {
     string stringReplace(string source, const string& from, const string& to);
     List<string> split(const string& source, Set<char> delimiters);
     string removeWhitespaces(const string& source);
+    string indent(const string& source);
+    inline const List<Pair<string, string>> EscapeSequences = {
+        { "\\", "\\\\" },
+        { "\'", "\\\'" },
+        { "\"", "\\\"" },
+        { "\?", "\\\?" },
+        { "\a", "\\a" },
+        { "\b", "\\b" },
+        { "\f", "\\f" },
+        { "\n", "\\n" },
+        { "\r", "\\r" },
+        { "\v", "\\v" },
+    };
 }
 // #include "json.hpp" (HPPMERGE)
 namespace ASST {
@@ -144,167 +135,393 @@ namespace ASST {
         string& operator[](const string& key);
         bool contains(const string& key) const;
         auto size() const;
-        string toString(const string& indent = "") const;
+        string toString() const;
+        auto begin() { return m_list.begin(); }
+        auto begin() const { return m_list.begin(); }
+        auto end() { return m_list.end(); }
+        auto end() const { return m_list.end(); }
     private:
         List<std::pair<string, string>> m_list;
     };
     class JSONList {
     public:
+        JSONList() = default;
+        JSONList(const string& str);
         string& at(address index);
         const string& at(address index) const;
         string& operator[](address index);
         void push(const string& value);
         auto size() const;
         bool isMultiline() const;
-        string toString(const string& indent = "") const;
+        string toString() const;
     private:
         List<string> m_list;
     };
+}
+// #include "type_string.hpp" (HPPMERGE)
+namespace ASST {
+    template<typename T>
+    static inline string TypeString = typeid(T).name();
+    template<>
+    string TypeString<void> = "void";
+    template<>
+    string TypeString<bool> = "bool";
+    template<>
+    string TypeString<char> = "char";
+    template<>
+    string TypeString<int> = "int";
+    template<>
+    string TypeString<uint> = "uint";
+    template<>
+    string TypeString<float> = "float";
+    template<>
+    string TypeString<double> = "double";
+    template<>
+    string TypeString<string> = "string";
+    template<typename T>
+    string TypeString<List<T>> = "List<" + TypeString<T> + ">";
+    template<typename K, typename V>
+    string TypeString<Map<K, V>> = "Map<" + TypeString<K> + "," + TypeString<V> + ">";
+}
+// #include "reflectable.hpp" (HPPMERGE)
+namespace ASST {
+    struct VoidReflector {
+        template<typename T>
+        void reflect(const string& str, const T& value) {
+        }
+    };
+    template<typename T>
+    concept ReflectableType = requires(T x, VoidReflector reflector) {
+        { x.reflect(reflector) };
+    };
+}
+// #include "json_serializable.hpp" (HPPMERGE)
+namespace ASST {
+    template<typename T>
+    struct JSONSerializable;
+    template<typename T>
+    string toJSONString(const T& value) {
+        return JSONSerializable<T>::toString(value);
+    }
+    template<typename T>
+    void fromJSONString(const string& str, T& value) {
+        JSONSerializable<T>::fromString(str, value);
+    }
+    template<typename T>
+    T fromJSONString(const string& str) {
+        T value;
+        fromJSONString<T>(str, value);
+        return value;
+    }
 }
 // #include "json_serializer.hpp" (HPPMERGE)
 namespace ASST {
     class JSONSerializer {
     public:
-        class WriteReflector {
-        public:
-            WriteReflector(const string& indent = "")
-                : indent(indent) {}
-            template<typename T>
-            void record(const string& key, const T& value) {
-                m_object[key] = JSONSerializer::toString<T>(value, indent + "    ");
-            }
-            string toString() const {
-                return m_object.toString(indent);
-            }
-        private:
-            JSONObject m_object;
-            string indent;
-        };
-        template<NumericType T>
-        static string toString(T value, const string& indent = "") {
-            string str = std::to_string(value);
-            str.erase(str.find_last_not_of('0') + 1, string::npos);
-            str.erase(str.find_last_not_of('.') + 1, string::npos);
-            return str;
-        }
-        template<StringType T>
-        static string toString(const T& str, const string& indent = "") {
-            return "\"" + str + "\"";
-        }
-        static string toString(std::nullptr_t null, const string& indent = "") {
-            return "null";
-        }
-        template<typename T1, typename T2>
-        static string toString(const std::pair<T1, T2>& pair, const string& indent = "") {
-            JSONList list;
-            list.push(toString(pair.first, indent + "    "));
-            list.push(toString(pair.second, indent + "    "));
-            return list.toString(indent);
-        }
-        template<IterableType T> requires (IterableType<T> && !StringType<T>)
-        static string toString(const T& range, const string& indent = "") {
-            JSONList list;
-            for (const auto& item : range) {
-                list.push(toString(item, indent + "    "));
-            }
-            return list.toString(indent);
-        }
-        template<typename T> requires ReflectableType<T>
-        static string toString(const T& value, const string& indent = "") {
-            WriteReflector reflector(indent);
-            const_cast<T&>(value).reflect(reflector);
-            return reflector.toString();
-        }
         template<typename T>
         static void serialize(const string& filepath, const T& value) {
-            ofstream(filepath) << toString(value);
-        }
-        class ReadReflector {
-        public:
-            ReadReflector(const string& str)
-                : m_object(str) {}
-            template<typename T>
-            void record(const string& key, T& value) {
-                value = JSONSerializer::fromString<T>(m_object.at(key));
-            }
-        private:
-            JSONObject m_object;
-        };
-        template<typename T> requires NumericType<T>
-        static T fromString(const string& str) {
-            T data;
-            std::istringstream(str) >> data;
-            return data;
-        }
-        template<typename T> requires std::same_as<T, string>
-        static T fromString(const string& str) {
-            return str.substr(1, str.length() - 2);
-        }
-        template<typename T> requires std::same_as<T, std::nullptr_t>
-        static T fromString(const string& str) {
-            return nullptr;
-        }
-        template<typename T> requires isPair<T>
-        static std::pair<typename T::first_type, typename T::second_type> fromString(const string& str) {
-            List<string> splitted = split(str.substr(1, str.length() - 2), { ',' });
-            return { fromString<typename T::first_type>(splitted[0]), fromString<typename T::second_type>(splitted[1]) };
-        }
-        template<typename T, address N>
-        static void appendValue(Array<T, N>& array, const string& str, address index) {
-            array[index] = fromString<T>(str);
-        }
-        template<typename T>
-        static void appendValue(List<T>& list, const string& str, address index) {
-            list.emplace_back(fromString<T>(str));
-        }
-        template<typename T>
-        static void appendValue(Stack<T>& stack, const string& str, address index) {
-            stack.emplace(fromString<T>(str));
-        }
-        template<typename T>
-        static void appendValue(Queue<T>& queue, const string& str, address index) {
-            queue.emplace(fromString<T>(str));
-        }
-        template<typename T>
-        static void appendValue(Deque<T>& deque, const string& str, address index) {
-            deque.emplace_back(fromString<T>(str));
-        }
-        template<typename T>
-        static void appendValue(Set<T>& set, const string& str, address index) {
-            set.emplace(fromString<T>(str));
-        }
-        template<typename K, typename V>
-        static void appendValue(Map<K, V>& map, const string& str, address index) {
-            map.insert(fromString<std::pair<K, V>>(str));
-        }
-        template<typename T>
-        static void appendValue(HashSet<T>& hashset, const string& str, address index) {
-            hashset.emplace(fromString<T>(str));
-        }
-        template<typename K, typename V>
-        static void appendValue(HashMap<K, V>& hashmap, const string& str, address index) {
-            hashmap.insert(fromString<std::pair<K, V>>(str));
-        }
-        template<typename T> requires (IterableType<T> && !StringType<T>)
-        static T fromString(const string& str) {
-            T out;
-            List<string> splitted = split(str.substr(1, str.length() - 2), { ',' });
-            for (address i = 0; i < splitted.size(); ++i) {
-                appendValue(out, splitted[i], i);
-            }
-            return out;
-        }
-        template<typename T> requires ReflectableType<T>
-        static T fromString(const string& str) {
-            ReadReflector reflector(str);
-            T value;
-            value.reflect(reflector);
-            return value;
+            ofstream(filepath) << toJSONString<T>(value);
         }
         template<typename T>
         static T deserialize(const string& filepath) {
             string source = (strstream() << ifstream(filepath).rdbuf()).str();
-            return fromString<T>(removeWhitespaces(source));
+            return fromJSONString<T>(removeWhitespaces(source));
+        }
+    };
+}
+// #include "serialize_string.hpp" (HPPMERGE)
+namespace ASST {
+    template<typename T> requires std::same_as<T, string>
+    struct JSONSerializable<T> {
+        static string toString(const T& value) {
+            string str(value);
+            for (const auto& [from, to] : EscapeSequences) {
+                str = stringReplace(str, from, to);
+            }
+            return "\"" + str + "\"";
+        }
+        static void fromString(const string& str, T& value) {
+            value = str.substr(1, str.length() - 2);
+            for (const auto& [to, from] : EscapeSequences) {
+                value = stringReplace(value, from, to);
+            }
+        }
+    };
+}
+// #include "serialize_primitive.hpp" (HPPMERGE)
+namespace ASST {
+    template<>
+    struct JSONSerializable<bool> {
+        static string toString(const bool& value) {
+            return (value ? "true" : "false");
+        }
+        static void fromString(const string& str, bool& value) {
+            value = (str == "true");
+        }
+    };
+    template<>
+    struct JSONSerializable<char> {
+        static string toString(const char& value) {
+            return toJSONString<string>(string({ value }));
+        }
+        static void fromString(const string& str, char& value) {
+            value = fromJSONString<string>(str).front();
+        }
+    };
+    template<typename T> requires (std::integral<T> || std::floating_point<T>)
+    struct JSONSerializable<T> {
+        static string toString(const T& value) {
+            return (ostrstream() << value).str();
+        }
+        static void fromString(const string& str, T& value) {
+            istrstream(str) >> value;
+        }
+    };
+}
+// #include "serialize_pair.hpp" (HPPMERGE)
+namespace ASST {
+    template<typename T1, typename T2>
+    struct JSONSerializable<Pair<T1, T2>> {
+        static string toString(const Pair<T1, T2>& value) {
+            JSONList list;
+            list.push(indent(toJSONString<T1>(value.first)));
+            list.push(indent(toJSONString<T2>(value.second)));
+            return list.toString();
+        }
+        static void fromString(const string& str, Pair<T1, T2>& value) {
+            List<string> splitted = split(str.substr(1, str.length() - 2), { ',' });
+            fromJSONString<T1>(splitted[0], value.first);
+            fromJSONString<T2>(splitted[1], value.second);
+        }
+    };
+}
+// #include "serialize_container.hpp" (HPPMERGE)
+namespace ASST {
+    template<typename T>
+    constexpr bool isArray = false;
+    template<typename T, address N>
+    constexpr bool isArray<Array<T, N>> = true;
+    template<typename T>
+    constexpr bool isList = false;
+    template<typename T>
+    constexpr bool isList<List<T>> = true;
+    template<typename T>
+    constexpr bool isStack = false;
+    template<typename T>
+    constexpr bool isStack<Stack<T>> = true;
+    template<typename T>
+    constexpr bool isQueue = false;
+    template<typename T>
+    constexpr bool isQueue<Queue<T>> = true;
+    template<typename T>
+    constexpr bool isDeque = false;
+    template<typename T>
+    constexpr bool isDeque<Deque<T>> = true;
+    template<typename T>
+    constexpr bool isSet = false;
+    template<typename T>
+    constexpr bool isSet<Set<T>> = true;
+    template<typename T>
+    constexpr bool isMap = false;
+    template<typename K, typename V>
+    constexpr bool isMap<Map<K, V>> = true;
+    template<typename T>
+    constexpr bool isHashSet = false;
+    template<typename T>
+    constexpr bool isHashSet<HashSet<T>> = true;
+    template<typename T>
+    constexpr bool isHashMap = false;
+    template<typename K, typename V>
+    constexpr bool isHashMap<HashMap<K, V>> = true;
+    template<typename T>
+    constexpr bool isSequential = (isArray<T> || isList<T> || isStack<T> || isQueue<T> || isDeque<T>);
+    template<typename T>
+    constexpr bool isAssociative = (isSet<T> || isMap<T>);
+    template<typename T>
+    constexpr bool isUnordered = (isHashSet<T> || isHashMap<T>);
+    template<typename T>
+    constexpr bool isContainer = (isSequential<T> || isAssociative<T> || isUnordered<T>);
+    template<typename T> requires isContainer<T>
+    struct JSONSerializable<T> {
+        static string toString(const T& value) {
+            JSONList list;
+            for (const auto& item : value) {
+                list.push(toJSONString<typename T::value_type>(item));
+            }
+            return list.toString();
+        }
+        static void fromString(const string& str, T& value) {
+            List<string> splitted = split(str.substr(1, str.length() - 2), { ',' });
+            for (address index = 0; index < splitted.size(); ++index) {
+                if constexpr (isMap<T>) {
+                    using Key = std::remove_const_t<typename T::value_type::first_type>;
+                    using Value = std::remove_const_t<typename T::value_type::second_type>;
+                    value.insert(fromJSONString<Pair<Key, Value>>(splitted[index]));
+                }
+                else if constexpr (isHashMap<T>) {
+                    using Key = std::remove_const_t<typename T::value_type::first_type>;
+                    using Value = std::remove_const_t<typename T::value_type::second_type>;
+                    value.insert(fromJSONString<Pair<Key, Value>>(splitted[index]));
+                }
+                else {
+                    auto item = fromJSONString<typename T::value_type>(splitted[index]);
+                    if constexpr (isArray<T>) {
+                        value[index] = item;
+                    }
+                    if constexpr (isList<T>) {
+                        value.emplace_back(item);
+                    }
+                    if constexpr (isStack<T>) {
+                        value.emplace(item);
+                    }
+                    if constexpr (isQueue<T>) {
+                        value.emplace(item);
+                    }
+                    if constexpr (isDeque<T>) {
+                        value.emplace_back(item);
+                    }
+                    if constexpr (isSet<T>) {
+                        value.emplace(item);
+                    }
+                    if constexpr (isHashSet<T>) {
+                        value.emplace(item);
+                    }
+                }
+            }
+        }
+    };
+}
+// #include "serialize_reflectable.hpp" (HPPMERGE)
+namespace ASST {
+    template<ReflectableType T>
+    struct JSONSerializable<T> {
+        class ToStringReflector {
+        public:
+            template<typename U>
+            void record(const string& key, const U& value) {
+                m_object[key] = indent(toJSONString<U>(value));
+            }
+            string toString() const {
+                return m_object.toString();
+            }
+        private:
+            JSONObject m_object;
+        };
+        static string toString(const T& value) {
+            ToStringReflector reflector;
+            const_cast<T&>(value).reflect(reflector);
+            return reflector.toString();
+        }
+        class FromStringReflector {
+        public:
+            FromStringReflector(const string& str)
+                : m_object(str) {}
+            template<typename U>
+            void record(const string& key, U& value) {
+                fromJSONString<U>(m_object.at(key), value);
+            }
+        private:
+            JSONObject m_object;
+        };
+        static void fromString(const string& str, T& value) {
+            FromStringReflector reflector(str);
+            value.reflect(reflector);
+        }
+    };
+}
+// #include "serialize_optional.hpp" (HPPMERGE)
+namespace ASST {
+    template<typename T>
+    struct JSONSerializable<Opt<T>> {
+        static string toString(const Opt<T>& value) {
+            if (value.has_value()) {
+                return toJSONString(value.value());
+            }
+            else {
+                return "null";
+            }
+        }
+        static void fromString(const string& str, Opt<T>& value) {
+            if (str == "null") {
+                value.reset();
+            }
+            else {
+                value = fromJSONString<T>(str);
+            }
+        }
+    };
+}
+// #include "serialize_tuple.hpp" (HPPMERGE)
+namespace ASST {
+    template<typename... TArgs>
+    struct JSONSerializable<Tuple<TArgs...>> {
+        template<address Index>
+        static void toStringTuple(const Tuple<TArgs...>& tuple, JSONList& list) {
+            using Type = std::tuple_element_t<Index, Tuple<TArgs...>>;
+            list.push(toJSONString<Type>(std::get<Index>(tuple)));
+            if constexpr (Index + 1 < sizeof...(TArgs)) {
+                toStringTuple<Index + 1>(tuple, list);
+            }
+        }
+        static string toString(const Tuple<TArgs...>& value) {
+            JSONList list;
+            toStringTuple<0>(value, list);
+            return list.toString();
+        }
+        template<address Index>
+        static void fromStringTuple(const JSONList& list, Tuple<TArgs...>& value) {
+            using Type = std::tuple_element_t<Index, Tuple<TArgs...>>;
+            std::get<Index>(value) = fromJSONString<Type>(list.at(Index));
+            if constexpr (Index + 1 < sizeof...(TArgs)) {
+                fromStringTuple<Index + 1>(list, value);
+            }
+        }
+        static void fromString(const string& str, Tuple<TArgs...>& value) {
+            fromStringTuple<0>(JSONList(str), value);
+        }
+    };
+}
+// #include "serialize_variant.hpp" (HPPMERGE)
+#include <variant>
+namespace ASST {
+    template<typename... TArgs>
+    struct JSONSerializable<std::variant<TArgs...>> {
+        template<address Index>
+        static string toStringVariant(const std::variant<TArgs...>& variant) {
+            using Type = std::variant_alternative_t<Index, std::variant<TArgs...>>;
+            if (std::holds_alternative<Type>(variant)) {
+                return toJSONString<Pair<string, Type>>({ TypeString<Type>, std::get<Type>(variant) });
+            }
+            else {
+                if constexpr (Index + 1 < sizeof...(TArgs)) {
+                    return toStringVariant<Index + 1>(variant);
+                }
+                else {
+                    throw std::exception();
+                }
+            }
+        }
+        static string toString(const std::variant<TArgs...>& value) {
+            return toStringVariant<0>(value);
+        }
+        template<address Index>
+        static std::variant<TArgs...> fromStringVariant(const string& type, const string& value) {
+            using Type = std::variant_alternative_t<Index, std::variant<TArgs...>>;
+            if (type == TypeString<Type>) {
+                return fromJSONString<Type>(value);
+            }
+            else {
+                if constexpr (Index + 1 < sizeof...(TArgs)) {
+                    return fromStringVariant<Index + 1>(type, value);
+                }
+                else {
+                    throw std::exception();
+                }
+            }
+        }
+        static void fromString(const string& str, std::variant<TArgs...>& data) {
+            List<string> splitted = split(str.substr(1, str.length() - 2), { ',' });
+            data = fromStringVariant<0>(fromJSONString<string>(splitted[0]), splitted[1]);
         }
     };
 }

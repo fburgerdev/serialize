@@ -5,7 +5,7 @@ workspace "serialize"
    -- build options
    configurations { "debug", "release", "dist" }
    -- startproject
-   startproject "ecs"
+   startproject "test"
    -- cpp
    language "C++"
    cppdialect "C++Latest"
@@ -57,8 +57,8 @@ project "serialize"
    -- binaries
    targetdir(ROOT .. "/lib/%{cfg.buildcfg}")
    objdir(ROOT .. "/bin/%{cfg.system}_%{cfg.buildcfg}")
--- tests :: ecs
-project "ecs"
+-- tests :: test
+project "test"
    -- console
    kind "ConsoleApp"
    -- include directories
@@ -76,7 +76,7 @@ project "ecs"
    }
    -- files
    files {
-      ROOT .. "/tests/ecs.cpp",  --[[ INSERT ADDITIONAL FILES HERE ]]
+      ROOT .. "/tests/test.cpp",  --[[ INSERT ADDITIONAL FILES HERE ]]
    }
    -- precompiled headers
    pchheader "common.hpp"

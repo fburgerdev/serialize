@@ -53,21 +53,25 @@ namespace ASST {
     }
 
     // toString
-    string JSONObject::toString(const string& indent) const {
+    string JSONObject::toString() const {
         strstream stream;
         stream << '{' << '\n';
         for (auto it = m_list.begin(); it != m_list.end(); ++it) {
-            stream << indent << "    " << '"' << it->first << '"' << ':' << ' ' << it->second;
+            stream << "    " << '"' << it->first << '"' << ':' << ' ' << it->second;
             if (std::next(it) != m_list.end()) {
                 stream << ',';
             }
             stream << '\n';
         }
-        stream << indent << '}';
+        stream << '}';
         return stream.str();
     }
 
     //* JSONList
+    // constructor
+    JSONList::JSONList(const string& str) {
+        m_list = split(str.substr(1, str.length() - 2), { ',' });
+    }
     // access
     // :: at
     string& JSONList::at(address index) {
@@ -99,16 +103,16 @@ namespace ASST {
         return false;
     }
     // toString
-    string JSONList::toString(const string& indent) const {
+    string JSONList::toString() const {
         if (m_list.empty()) {
             return "[ ]";
         }
-        string sep = isMultiline() ? "\n" + indent : " ";
-        string longsep = isMultiline() ? sep + "    " : " ";
+        string sep = isMultiline() ? "\n" : " ";
+        string longsep = isMultiline() ? "\n    " : " ";
         strstream stream;
         stream << '[' << longsep;
         for (auto it = m_list.begin(); it != m_list.end(); ++it) {
-            stream << *it;
+            stream << indent(*it);
             if (std::next(it) != m_list.end()) {
                 stream << ',' << longsep;
             }

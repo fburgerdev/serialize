@@ -5,10 +5,16 @@ struct Test {
     void reflect(Reflector& reflector) {
         reflector.record("tag", tag);
         reflector.record("value", value);
+        reflector.record("opt", opt);
+        reflector.record("variant", variant);
+        reflector.record("tuple", tuple);
     }
 
     std::string tag;
     int value;
+    std::optional<std::string> opt;
+    std::variant<int, float> variant;
+    std::tuple<int, float> tuple;
 };
 struct NestedTest {
     template<typename Reflector>
@@ -23,16 +29,12 @@ struct NestedTest {
 
 using namespace ASST;
 int main() {
-    NestedTest test = { { "HALLO", 1}, Map<int, string>({ { 0, "zero" }, { 1, "one" }, { 2, "two" }, { 3, "three" }, { 4, "four" }, { 5, "five" } })};
-    ASST::JSONSerializer::serialize("/home/flo/dev/asset/test.json", test);
-    std::cout << "Hello World!" << std::endl;
+    uchar ch = 'A';
+    Map<int, string> map = { { 0, "zero" }, { 1, "one" }, { 2, "two" }, { 3, "three" }, { 4, "four" }, { 5, "five" } };
+    Pair<string, string> value("HALL\nO", "Ciau");
+    NestedTest test = { { "Tag", 42, "HALLO", 1, { 3, 2.0F} }, map };
 
-    std::cout << ASST::JSONSerializer::fromString<std::string>("\"asdasd\"") << std::endl;
-    auto map = JSONSerializer::fromString<Map<int, string>>("[[1,\"on,,[e\"],[2,\"two\"],[3,\"three\"]]");
-    for (auto& [key, value] : map) {
-        std::cout << "Key: " << key << ", Value: " << value << std::endl;
-    }
-    auto test2 = JSONSerializer::deserialize<NestedTest>("/home/flo/dev/asset/test.json");
-    ASST::JSONSerializer::serialize("/home/flo/dev/asset/testto.json", test2);
+    JSONSerializer::serialize("/home/flo/dev/serialize/test.json", List<NestedTest>({ test }));
+    auto result = JSONSerializer::deserialize<List<NestedTest>>("/home/flo/dev/serialize/test.json");
     return EXIT_SUCCESS;
 }
