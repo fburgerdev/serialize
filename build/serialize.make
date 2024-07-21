@@ -21,12 +21,12 @@ ifeq ($(config),debug)
   INCLUDES += -I.. -I../src
   FORCE_INCLUDE += -include $(OBJDIR)/$(notdir $(PCH))
   ALL_CPPFLAGS += $(CPPFLAGS) -MD -MP $(DEFINES) $(INCLUDES)
-  ALL_CFLAGS += $(CFLAGS) $(ALL_CPPFLAGS) -g
-  ALL_CXXFLAGS += $(CXXFLAGS) $(ALL_CPPFLAGS) -g -std=c++20
+  ALL_CFLAGS += $(CFLAGS) $(ALL_CPPFLAGS) -g -Wall -Wextra -Wpedantic
+  ALL_CXXFLAGS += $(CXXFLAGS) $(ALL_CPPFLAGS) -g -std=c++20 -Wall -Wextra -Wpedantic
   ALL_RESFLAGS += $(RESFLAGS) $(DEFINES) $(INCLUDES)
   LIBS +=
   LDDEPS +=
-  ALL_LDFLAGS += $(LDFLAGS)
+  ALL_LDFLAGS += $(LDFLAGS) -L../lib/debug
   LINKCMD = $(AR) -rcs "$@" $(OBJECTS)
   define PREBUILDCMDS
   endef
@@ -44,18 +44,16 @@ ifeq ($(config),release)
   TARGETDIR = ../lib/release
   TARGET = $(TARGETDIR)/libserialize.a
   OBJDIR = ../bin/linux_release
-  PCH = ../src/common.hpp
-  GCH = $(OBJDIR)/$(notdir $(PCH)).gch
   DEFINES += -DCONFIG_RELEASE -DSYSTEM_LINUX
   INCLUDES += -I.. -I../src
-  FORCE_INCLUDE += -include $(OBJDIR)/$(notdir $(PCH))
+  FORCE_INCLUDE +=
   ALL_CPPFLAGS += $(CPPFLAGS) -MD -MP $(DEFINES) $(INCLUDES)
-  ALL_CFLAGS += $(CFLAGS) $(ALL_CPPFLAGS) -O2
-  ALL_CXXFLAGS += $(CXXFLAGS) $(ALL_CPPFLAGS) -O2 -std=c++20
+  ALL_CFLAGS += $(CFLAGS) $(ALL_CPPFLAGS) -O2 -Wall -Wextra -Wpedantic
+  ALL_CXXFLAGS += $(CXXFLAGS) $(ALL_CPPFLAGS) -O2 -std=c++20 -Wall -Wextra -Wpedantic
   ALL_RESFLAGS += $(RESFLAGS) $(DEFINES) $(INCLUDES)
   LIBS +=
   LDDEPS +=
-  ALL_LDFLAGS += $(LDFLAGS) -s -Ofast
+  ALL_LDFLAGS += $(LDFLAGS) -L../lib/release -s -Ofast
   LINKCMD = $(AR) -rcs "$@" $(OBJECTS)
   define PREBUILDCMDS
   endef
@@ -73,18 +71,16 @@ ifeq ($(config),dist)
   TARGETDIR = ../lib/dist
   TARGET = $(TARGETDIR)/libserialize.a
   OBJDIR = ../bin/linux_dist
-  PCH = ../src/common.hpp
-  GCH = $(OBJDIR)/$(notdir $(PCH)).gch
   DEFINES += -DCONFIG_DIST -DSYSTEM_LINUX
   INCLUDES += -I.. -I../src
-  FORCE_INCLUDE += -include $(OBJDIR)/$(notdir $(PCH))
+  FORCE_INCLUDE +=
   ALL_CPPFLAGS += $(CPPFLAGS) -MD -MP $(DEFINES) $(INCLUDES)
-  ALL_CFLAGS += $(CFLAGS) $(ALL_CPPFLAGS) -O2
-  ALL_CXXFLAGS += $(CXXFLAGS) $(ALL_CPPFLAGS) -O2 -std=c++20
+  ALL_CFLAGS += $(CFLAGS) $(ALL_CPPFLAGS) -O2 -Wall -Wextra -Wpedantic
+  ALL_CXXFLAGS += $(CXXFLAGS) $(ALL_CPPFLAGS) -O2 -std=c++20 -Wall -Wextra -Wpedantic
   ALL_RESFLAGS += $(RESFLAGS) $(DEFINES) $(INCLUDES)
   LIBS +=
   LDDEPS +=
-  ALL_LDFLAGS += $(LDFLAGS) -s -Ofast
+  ALL_LDFLAGS += $(LDFLAGS) -L../lib/dist -s -Ofast
   LINKCMD = $(AR) -rcs "$@" $(OBJECTS)
   define PREBUILDCMDS
   endef
@@ -100,7 +96,6 @@ endif
 OBJECTS := \
 	$(OBJDIR)/common.o \
 	$(OBJDIR)/json.o \
-	$(OBJDIR)/string.o \
 
 RESOURCES := \
 
@@ -162,10 +157,7 @@ endif
 $(OBJDIR)/common.o: ../src/common.cpp
 	@echo $(notdir $<)
 	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
-$(OBJDIR)/json.o: ../src/json.cpp
-	@echo $(notdir $<)
-	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
-$(OBJDIR)/string.o: ../src/string.cpp
+$(OBJDIR)/json.o: ../src/json/json.cpp
 	@echo $(notdir $<)
 	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
 

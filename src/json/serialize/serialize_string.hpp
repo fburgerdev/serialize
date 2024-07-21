@@ -1,7 +1,21 @@
 #pragma once
-#include "json_serializable.hpp"
+#include "json/serializable.hpp"
 
 namespace ASST {
+    // EscapeSequences
+    inline const List<Pair<string, string>> EscapeSequences = {
+        { "\\", "\\\\" },
+        { "\'", "\\\'" },
+        { "\"", "\\\"" },
+        { "\?", "\\\?" },
+        { "\a", "\\a" },
+        { "\b", "\\b" },
+        { "\f", "\\f" },
+        { "\n", "\\n" },
+        { "\r", "\\r" },
+        { "\v", "\\v" },
+    };
+
     // JSONSerializable
     template<typename T> requires std::same_as<T, string>
     struct JSONSerializable<T> {

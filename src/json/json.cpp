@@ -1,4 +1,5 @@
 #include "json.hpp"
+#include "string_utils.hpp"
 
 namespace ASST {
     //* JSONObject

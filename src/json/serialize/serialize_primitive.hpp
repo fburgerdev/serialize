@@ -1,5 +1,5 @@
 #pragma once
-#include "serialize_string.hpp"
+#include "json/serializable.hpp"
 
 namespace ASST {
     // bool

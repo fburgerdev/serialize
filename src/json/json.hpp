@@ -1,5 +1,5 @@
 #pragma once
-#include "string.hpp"
+#include "string_utils.hpp"
 
 namespace ASST {
     // JSONObject
@@ -30,7 +30,7 @@ namespace ASST {
         auto end() const { return m_list.end(); }
     private:
         // list and indent
-        List<std::pair<string, string>> m_list;
+        List<Pair<string, string>> m_list;
     };
     // JSONList
     class JSONList {

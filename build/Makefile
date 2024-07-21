@@ -12,18 +12,18 @@ endif
 
 ifeq ($(config),debug)
   serialize_config = debug
-  test_config = debug
+  type_string_config = debug
 endif
 ifeq ($(config),release)
   serialize_config = release
-  test_config = release
+  type_string_config = release
 endif
 ifeq ($(config),dist)
   serialize_config = dist
-  test_config = dist
+  type_string_config = dist
 endif
 
-PROJECTS := serialize test
+PROJECTS := serialize type_string
 
 .PHONY: all clean help $(PROJECTS) 
 
@@ -35,15 +35,15 @@ ifneq (,$(serialize_config))
 	@${MAKE} --no-print-directory -C . -f serialize.make config=$(serialize_config)
 endif
 
-test: serialize
-ifneq (,$(test_config))
-	@echo "==== Building test ($(test_config)) ===="
-	@${MAKE} --no-print-directory -C . -f test.make config=$(test_config)
+type_string: serialize
+ifneq (,$(type_string_config))
+	@echo "==== Building type_string ($(type_string_config)) ===="
+	@${MAKE} --no-print-directory -C . -f type_string.make config=$(type_string_config)
 endif
 
 clean:
 	@${MAKE} --no-print-directory -C . -f serialize.make clean
-	@${MAKE} --no-print-directory -C . -f test.make clean
+	@${MAKE} --no-print-directory -C . -f type_string.make clean
 
 help:
 	@echo "Usage: make [config=name] [target]"
@@ -57,6 +57,6 @@ help:
 	@echo "   all (default)"
 	@echo "   clean"
 	@echo "   serialize"
-	@echo "   test"
+	@echo "   type_string"
 	@echo ""
 	@echo "For more information, see https://github.com/premake/premake-core/wiki"

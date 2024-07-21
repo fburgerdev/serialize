@@ -13,7 +13,7 @@ endif
 ifeq ($(config),debug)
   RESCOMP = windres
   TARGETDIR = ../bin/tests/linux_debug
-  TARGET = $(TARGETDIR)/test
+  TARGET = $(TARGETDIR)/type_string
   OBJDIR = ../bin/tests/linux_debug/obj
   PCH = ../src/common.hpp
   GCH = $(OBJDIR)/$(notdir $(PCH)).gch
@@ -42,7 +42,7 @@ endif
 ifeq ($(config),release)
   RESCOMP = windres
   TARGETDIR = ../bin/tests/linux_release
-  TARGET = $(TARGETDIR)/test
+  TARGET = $(TARGETDIR)/type_string
   OBJDIR = ../bin/tests/linux_release/obj
   DEFINES += -DCONFIG_RELEASE -DSYSTEM_LINUX
   INCLUDES += -I../include -I../src
@@ -69,7 +69,7 @@ endif
 ifeq ($(config),dist)
   RESCOMP = windres
   TARGETDIR = ../bin/tests/linux_dist
-  TARGET = $(TARGETDIR)/test
+  TARGET = $(TARGETDIR)/type_string
   OBJDIR = ../bin/tests/linux_dist/obj
   DEFINES += -DCONFIG_DIST -DSYSTEM_LINUX
   INCLUDES += -I../include -I../src
@@ -94,7 +94,7 @@ all: prebuild prelink $(TARGET)
 endif
 
 OBJECTS := \
-	$(OBJDIR)/test.o \
+	$(OBJDIR)/type_string.o \
 
 RESOURCES := \
 
@@ -106,7 +106,7 @@ ifeq (.exe,$(findstring .exe,$(ComSpec)))
 endif
 
 $(TARGET): $(GCH) ${CUSTOMFILES} $(OBJECTS) $(LDDEPS) $(RESOURCES) | $(TARGETDIR)
-	@echo Linking test
+	@echo Linking type_string
 	$(SILENT) $(LINKCMD)
 	$(POSTBUILDCMDS)
 
@@ -129,7 +129,7 @@ else
 endif
 
 clean:
-	@echo Cleaning test
+	@echo Cleaning type_string
 ifeq (posix,$(SHELLTYPE))
 	$(SILENT) rm -f  $(TARGET)
 	$(SILENT) rm -rf $(OBJDIR)
@@ -153,7 +153,7 @@ else
 $(OBJECTS): | $(OBJDIR)
 endif
 
-$(OBJDIR)/test.o: ../tests/test.cpp
+$(OBJDIR)/type_string.o: ../tests/type_string.cpp
 	@echo $(notdir $<)
 	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
 

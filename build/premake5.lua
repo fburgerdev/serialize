@@ -1,24 +1,40 @@
 -- premake5.lua
 ROOT = ".."
+
 -- workspace
 workspace "serialize"
-   -- build options
-   configurations { "debug", "release", "dist" }
    -- startproject
-   startproject "test"
+   startproject "type_string"
    -- cpp
    language "C++"
-   cppdialect "C++Latest"
+   cppdialect "C++20"
+
    -- debug
    debugger "GDB"
+
    -- defines
    defines {  }
+
+   -- dependancies
+   -- :: directories
+   libdirs {
+      ROOT .. "/lib/%{cfg.buildcfg}",
+      ROOT .. "/modules/*/lib/%{cfg.buildcfg}",
+      ROOT .. "/vendor/*/lib/%{cfg.buildcfg}"
+   }
+   -- :: libraries
+   links {  --[[ INSERT ADDITIONAL LINKS HERE ]] }
+
    -- config
+   configurations { "debug", "release", "dist" }
    -- :: debug
    filter "configurations:debug"
       symbols "On"
       defines { "CONFIG_DEBUG" }
-   -- :: fast
+      -- precompiled headers
+      pchheader "common.hpp"
+      pchsource "common.cpp"
+   -- :: release
    filter "configurations:release"
       optimize "On"
       defines { "CONFIG_RELEASE" }
@@ -28,6 +44,7 @@ workspace "serialize"
       optimize "On"
       defines { "CONFIG_DIST" }
       linkoptions { "-Ofast" }
+   
    -- system
    -- :: windows
    filter "system:windows"
@@ -35,11 +52,18 @@ workspace "serialize"
    -- :: linux
    filter "system:linux"
       defines { "SYSTEM_LINUX" }
+   
+   -- toolset
+   -- :: gcc
+   filter "toolset:gcc"
+      buildoptions { "-Wall", "-Wextra", "-Wpedantic" }
+
 -- project lib
 project "serialize"
    -- static library
    kind "StaticLib"
-   -- include directories
+
+   -- include
    includedirs {
       ROOT,
       ROOT .. "/src",
@@ -51,40 +75,34 @@ project "serialize"
       ROOT .. "/src/**",
       ROOT .. "/vendor/*/src/**",
    }
-   -- precompiled headers
-   pchheader "common.hpp"
-   pchsource "common.cpp"
+   
    -- binaries
    targetdir(ROOT .. "/lib/%{cfg.buildcfg}")
    objdir(ROOT .. "/bin/%{cfg.system}_%{cfg.buildcfg}")
--- tests :: test
-project "test"
+-- tests :: type_string
+project "type_string"
    -- console
    kind "ConsoleApp"
-   -- include directories
+
+   -- include
    includedirs {
       ROOT .. "/include",
       ROOT .. "/src",
       ROOT .. "/modules/*/include",
       ROOT .. "/vendor/*/include"
    }
-   -- library directories
-   libdirs {
-      ROOT .. "/lib/%{cfg.buildcfg}",
-      ROOT .. "/modules/*/lib/%{cfg.buildcfg}",
-      ROOT .. "/vendor/*/lib/%{cfg.buildcfg}"
-   }
    -- files
    files {
-      ROOT .. "/tests/test.cpp",  --[[ INSERT ADDITIONAL FILES HERE ]]
+      ROOT .. "/tests/type_string.cpp",
+      --[[ INSERT ADDITIONAL FILES HERE ]]
    }
-   -- precompiled headers
-   pchheader "common.hpp"
-   pchsource "common.cpp"
-   -- links
-   links { "serialize",  --[[ INSERT ADDITIONAL LINKS HERE ]] }
+
    -- defines
    defines {  }
+
+   -- libraries
+   links { "serialize",  --[[ INSERT ADDITIONAL LINKS HERE ]] }
+
    -- binaries
    targetdir(ROOT .. "/bin/tests/%{cfg.system}_%{cfg.buildcfg}")
    objdir(ROOT .. "/bin/tests/%{cfg.system}_%{cfg.buildcfg}/obj")

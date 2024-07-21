@@ -15,6 +15,8 @@
 #include <unordered_map> 
 #include <functional> 
 #include <optional> 
+#include <variant> 
+#include <tuple> 
 #include <iostream> 
 #include <fstream> 
 #include <sstream> 
@@ -36,10 +38,14 @@ namespace ASST {
     using uint64 = std::uint64_t;
     using string = std::string;
     using strview = std::string_view;
+    template<typename T>
+    using Optional = std::optional<T>;
     template<typename T1, typename T2>
     using Pair = std::pair<T1, T2>;
     template<typename... TArgs>
     using Tuple = std::tuple<TArgs...>;
+    template<typename... TArgs>
+    using Variant = std::variant<TArgs...>;
     template<typename T, address N>
     using Array = std::array<T, N>;
     template<typename T>
@@ -75,8 +81,6 @@ namespace ASST {
     template<typename T>
     using WeakPtr = std::weak_ptr<T>;
     using std::function;
-    template<typename T>
-    using Opt = std::optional<T>;
     using std::cout;
     using std::cerr;
     using std::endl;
@@ -105,24 +109,70 @@ namespace ASST {
     using atomic_uint32 = std::atomic_uint32_t;
     using atomic_uint64 = std::atomic_uint64_t;
 }
-// #include "string.hpp" (HPPMERGE)
+// #include "string_utils.hpp" (HPPMERGE)
 namespace ASST {
-    string stringReplace(string source, const string& from, const string& to);
-    List<string> split(const string& source, Set<char> delimiters);
-    string removeWhitespaces(const string& source);
-    string indent(const string& source);
-    inline const List<Pair<string, string>> EscapeSequences = {
-        { "\\", "\\\\" },
-        { "\'", "\\\'" },
-        { "\"", "\\\"" },
-        { "\?", "\\\?" },
-        { "\a", "\\a" },
-        { "\b", "\\b" },
-        { "\f", "\\f" },
-        { "\n", "\\n" },
-        { "\r", "\\r" },
-        { "\v", "\\v" },
-    };
+    inline string stringReplace(string source, const string& from, const string& to) {
+        address index = 0;
+        while (true) {
+            index = source.find(from, index);
+            if (index == string::npos) {
+                break;
+            }
+            source.replace(index, from.length(), to);
+            index += to.length();
+        }
+        return source;
+    }
+    inline List<string> split(const string& source, Set<char> delimiters) {
+        List<string> result = {""};
+        int scope = 0;
+        bool inString = false;
+        for (address i = 0; i < source.length(); ++i) {
+            char ch = source[i];
+            if (!inString) {
+                if (ch == '[' || ch == '{') {
+                    ++scope;
+                }
+                if (ch == ']' || ch == '}') {
+                    --scope;
+                }
+            }
+            if (ch == '"' && (i == 0 || source[i - 1] != '\\')) {
+                inString = !inString;
+            }
+            if (scope == 0 && !inString && delimiters.contains(ch)) {
+                result.emplace_back();
+            }
+            else {
+                result.back().push_back(ch);
+            }
+        }
+        if (result.back().empty()) {
+            result.pop_back();
+        }
+        return result;
+    }
+    // removeWhitespace
+    inline string removeWhitespace(const string& source) {
+        string result;
+        bool inString = false;
+        for (address i = 0; i < source.length(); ++i) {
+            char ch = source[i];
+            if (ch == '"' && (i == 0 || source[i - 1] != '\\')) {
+                inString = !inString;
+            }
+            if (ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r' || ch == '\f') {
+                continue;
+            }
+            else {
+                result.push_back(ch);
+            }
+        }
+        return result;
+    }
+    inline string indent(const string& source) {
+        return stringReplace(source, "\n", "\n    ");
+    }
 }
 // #include "json.hpp" (HPPMERGE)
 namespace ASST {
@@ -141,7 +191,7 @@ namespace ASST {
         auto end() { return m_list.end(); }
         auto end() const { return m_list.end(); }
     private:
-        List<std::pair<string, string>> m_list;
+        List<Pair<string, string>> m_list;
     };
     class JSONList {
     public:
@@ -158,44 +208,7 @@ namespace ASST {
         List<string> m_list;
     };
 }
-// #include "type_string.hpp" (HPPMERGE)
-namespace ASST {
-    template<typename T>
-    static inline string TypeString = typeid(T).name();
-    template<>
-    string TypeString<void> = "void";
-    template<>
-    string TypeString<bool> = "bool";
-    template<>
-    string TypeString<char> = "char";
-    template<>
-    string TypeString<int> = "int";
-    template<>
-    string TypeString<uint> = "uint";
-    template<>
-    string TypeString<float> = "float";
-    template<>
-    string TypeString<double> = "double";
-    template<>
-    string TypeString<string> = "string";
-    template<typename T>
-    string TypeString<List<T>> = "List<" + TypeString<T> + ">";
-    template<typename K, typename V>
-    string TypeString<Map<K, V>> = "Map<" + TypeString<K> + "," + TypeString<V> + ">";
-}
-// #include "reflectable.hpp" (HPPMERGE)
-namespace ASST {
-    struct VoidReflector {
-        template<typename T>
-        void reflect(const string& str, const T& value) {
-        }
-    };
-    template<typename T>
-    concept ReflectableType = requires(T x, VoidReflector reflector) {
-        { x.reflect(reflector) };
-    };
-}
-// #include "json_serializable.hpp" (HPPMERGE)
+// #include "serializable.hpp" (HPPMERGE)
 namespace ASST {
     template<typename T>
     struct JSONSerializable;
@@ -214,7 +227,7 @@ namespace ASST {
         return value;
     }
 }
-// #include "json_serializer.hpp" (HPPMERGE)
+// #include "serializer.hpp" (HPPMERGE)
 namespace ASST {
     class JSONSerializer {
     public:
@@ -225,26 +238,7 @@ namespace ASST {
         template<typename T>
         static T deserialize(const string& filepath) {
             string source = (strstream() << ifstream(filepath).rdbuf()).str();
-            return fromJSONString<T>(removeWhitespaces(source));
-        }
-    };
-}
-// #include "serialize_string.hpp" (HPPMERGE)
-namespace ASST {
-    template<typename T> requires std::same_as<T, string>
-    struct JSONSerializable<T> {
-        static string toString(const T& value) {
-            string str(value);
-            for (const auto& [from, to] : EscapeSequences) {
-                str = stringReplace(str, from, to);
-            }
-            return "\"" + str + "\"";
-        }
-        static void fromString(const string& str, T& value) {
-            value = str.substr(1, str.length() - 2);
-            for (const auto& [to, from] : EscapeSequences) {
-                value = stringReplace(value, from, to);
-            }
+            return fromJSONString<T>(removeWhitespace(source));
         }
     };
 }
@@ -275,6 +269,37 @@ namespace ASST {
         }
         static void fromString(const string& str, T& value) {
             istrstream(str) >> value;
+        }
+    };
+}
+// #include "serialize_string.hpp" (HPPMERGE)
+namespace ASST {
+    inline const List<Pair<string, string>> EscapeSequences = {
+        { "\\", "\\\\" },
+        { "\'", "\\\'" },
+        { "\"", "\\\"" },
+        { "\?", "\\\?" },
+        { "\a", "\\a" },
+        { "\b", "\\b" },
+        { "\f", "\\f" },
+        { "\n", "\\n" },
+        { "\r", "\\r" },
+        { "\v", "\\v" },
+    };
+    template<typename T> requires std::same_as<T, string>
+    struct JSONSerializable<T> {
+        static string toString(const T& value) {
+            string str(value);
+            for (const auto& [from, to] : EscapeSequences) {
+                str = stringReplace(str, from, to);
+            }
+            return "\"" + str + "\"";
+        }
+        static void fromString(const string& str, T& value) {
+            value = str.substr(1, str.length() - 2);
+            for (const auto& [to, from] : EscapeSequences) {
+                value = stringReplace(value, from, to);
+            }
         }
     };
 }
@@ -391,6 +416,18 @@ namespace ASST {
         }
     };
 }
+// #include "reflectable.hpp" (HPPMERGE)
+namespace ASST {
+    struct VoidReflector {
+        template<typename T>
+        void reflect(const string& str, const T& value) {
+        }
+    };
+    template<typename T>
+    concept ReflectableType = requires(T x, VoidReflector reflector) {
+        { x.reflect(reflector) };
+    };
+}
 // #include "serialize_reflectable.hpp" (HPPMERGE)
 namespace ASST {
     template<ReflectableType T>
@@ -432,8 +469,8 @@ namespace ASST {
 // #include "serialize_optional.hpp" (HPPMERGE)
 namespace ASST {
     template<typename T>
-    struct JSONSerializable<Opt<T>> {
-        static string toString(const Opt<T>& value) {
+    struct JSONSerializable<Optional<T>> {
+        static string toString(const Optional<T>& value) {
             if (value.has_value()) {
                 return toJSONString(value.value());
             }
@@ -441,7 +478,7 @@ namespace ASST {
                 return "null";
             }
         }
-        static void fromString(const string& str, Opt<T>& value) {
+        static void fromString(const string& str, Optional<T>& value) {
             if (str == "null") {
                 value.reset();
             }
@@ -471,7 +508,7 @@ namespace ASST {
         template<address Index>
         static void fromStringTuple(const JSONList& list, Tuple<TArgs...>& value) {
             using Type = std::tuple_element_t<Index, Tuple<TArgs...>>;
-            std::get<Index>(value) = fromJSONString<Type>(list.at(Index));
+            fromJSONString<Type>(list.at(Index), std::get<Index>(value));
             if constexpr (Index + 1 < sizeof...(TArgs)) {
                 fromStringTuple<Index + 1>(list, value);
             }
@@ -481,8 +518,151 @@ namespace ASST {
         }
     };
 }
+// #include "type_string.hpp" (HPPMERGE)
+namespace ASST {
+    template<typename T>
+    struct TypeString {
+        string operator()() const {
+            return typeid(T).name();
+        }
+    };
+    template<typename TFirst, typename... TRest>
+    inline string JoinedTypeString() {
+        if constexpr (sizeof...(TRest) > 0) {
+            return TypeString<TFirst>()() + "," + JoinedTypeString<TRest...>();
+        }
+        else {
+            return TypeString<TFirst>()();
+        }
+    }
+    template<>
+    struct TypeString<void> {
+        string operator()() const {
+            return "void";
+        }
+    };
+    template<>
+    struct TypeString<bool> {
+        string operator()() const {
+            return "bool";
+        }
+    };
+    template<>
+    struct TypeString<char> {
+        string operator()() const {
+            return "char";
+        }
+    };
+    template<>
+    struct TypeString<int> {
+        string operator()() const {
+            return "int";
+        }
+    };
+    template<>
+    struct TypeString<uint> {
+        string operator()() const {
+            return "uint";
+        }
+    };
+    template<>
+    struct TypeString<float> {
+        string operator()() const {
+            return "float";
+        }
+    };
+    template<>
+    struct TypeString<double> {
+        string operator()() const {
+            return "double";
+        }
+    };
+    template<>
+    struct TypeString<string> {
+        string operator()() const {
+            return "string";
+        }
+    };
+    template<typename T, address N>
+    struct TypeString<Array<T, N>> {
+        string operator()() const {
+            return "Array<" + TypeString<T>()() + "," + std::to_string(N) + ">";
+        }
+    };
+    template<typename T>
+    struct TypeString<List<T>> {
+        string operator()() const {
+            return "List<" + TypeString<T>()() + ">";
+        }
+    };
+    template<typename T>
+    struct TypeString<Stack<T>> {
+        string operator()() const {
+            return "Stack<" + TypeString<T>()() + ">";
+        }
+    };
+    template<typename T>
+    struct TypeString<Queue<T>> {
+        string operator()() const {
+            return "Queue<" + TypeString<T>()() + ">";
+        }
+    };
+    template<typename T>
+    struct TypeString<Deque<T>> {
+        string operator()() const {
+            return "Deque<" + TypeString<T>()() + ">";
+        }
+    };
+    template<typename T>
+    struct TypeString<Set<T>> {
+        string operator()() const {
+            return "Set<" + TypeString<T>()() + ">";
+        }
+    };
+    template<typename K, typename V>
+    struct TypeString<Map<K, V>> {
+        string operator()() const {
+            return "Map<" + TypeString<K>()() + "," + TypeString<V>()() + ">";
+        }
+    };
+    template<typename T>
+    struct TypeString<HashSet<T>> {
+        string operator()() const {
+            return "HashSet<" + TypeString<T>()() + ">";
+        }
+    };
+    template<typename K, typename V>
+    struct TypeString<HashMap<K, V>> {
+        string operator()() const {
+            return "HashMap<" + TypeString<K>()() + "," + TypeString<V>()() + ">";
+        }
+    };
+    template<typename T>
+    struct TypeString<Optional<T>> {
+        string operator()() const {
+            return "Optional<" + TypeString<T>()() + ">";
+        }
+    };
+    template<typename T1, typename T2>
+    struct TypeString<Pair<T1, T2>> {
+        string operator()() const {
+            return "Pair<" + TypeString<T1>()() + "," + TypeString<T2>()() + ">";
+        }
+    };
+    template<typename... TArgs>
+    struct TypeString<Tuple<TArgs...>> {
+        string operator()() const {
+            return "Tuple<" + JoinedTypeString<TArgs...>() + ">";
+        }
+    };
+    template<typename... TArgs>
+    struct TypeString<Variant<TArgs...>> {
+        string operator()() const {
+            return "Variant<" + JoinedTypeString<TArgs...>() + ">";
+        }
+    };
+}
 // #include "serialize_variant.hpp" (HPPMERGE)
-#include <variant>
 namespace ASST {
     template<typename... TArgs>
     struct JSONSerializable<std::variant<TArgs...>> {
@@ -490,7 +670,7 @@ namespace ASST {
         static string toStringVariant(const std::variant<TArgs...>& variant) {
             using Type = std::variant_alternative_t<Index, std::variant<TArgs...>>;
             if (std::holds_alternative<Type>(variant)) {
-                return toJSONString<Pair<string, Type>>({ TypeString<Type>, std::get<Type>(variant) });
+                return toJSONString<Pair<string, Type>>({ TypeString<Type>()(), std::get<Type>(variant) });
             }
             else {
                 if constexpr (Index + 1 < sizeof...(TArgs)) {
@@ -507,7 +687,7 @@ namespace ASST {
         template<address Index>
         static std::variant<TArgs...> fromStringVariant(const string& type, const string& value) {
             using Type = std::variant_alternative_t<Index, std::variant<TArgs...>>;
-            if (type == TypeString<Type>) {
+            if (type == TypeString<Type>()()) {
                 return fromJSONString<Type>(value);
             }
             else {

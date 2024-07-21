@@ -1,6 +1,6 @@
 #pragma once
-#include "json_serializable.hpp"
-#include <variant>
+#include "json/serializable.hpp"
+#include "type_string.hpp"
 
 namespace ASST {
     // JSONSerializable
@@ -11,7 +11,7 @@ namespace ASST {
         static string toStringVariant(const std::variant<TArgs...>& variant) {
             using Type = std::variant_alternative_t<Index, std::variant<TArgs...>>;
             if (std::holds_alternative<Type>(variant)) {
-                return toJSONString<Pair<string, Type>>({ TypeString<Type>, std::get<Type>(variant) });
+                return toJSONString<Pair<string, Type>>({ TypeString<Type>()(), std::get<Type>(variant) });
             }
             else {
                 if constexpr (Index + 1 < sizeof...(TArgs)) {
@@ -31,7 +31,7 @@ namespace ASST {
         template<address Index>
         static std::variant<TArgs...> fromStringVariant(const string& type, const string& value) {
             using Type = std::variant_alternative_t<Index, std::variant<TArgs...>>;
-            if (type == TypeString<Type>) {
+            if (type == TypeString<Type>()()) {
                 return fromJSONString<Type>(value);
             }
             else {

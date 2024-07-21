@@ -1,8 +1,9 @@
-#include "string.hpp"
+#pragma once
+#include "common.hpp"
 
 namespace ASST {
     // stringReplace
-    string stringReplace(string source, const string& from, const string& to) {
+    inline string stringReplace(string source, const string& from, const string& to) {
         address index = 0;
         while (true) {
             index = source.find(from, index);
@@ -15,7 +16,7 @@ namespace ASST {
         return source;
     }
     // split
-    List<string> split(const string& source, Set<char> delimiters) {
+    inline List<string> split(const string& source, Set<char> delimiters) {
         List<string> result = {""};
         int scope = 0;
         bool inString = false;
@@ -45,8 +46,8 @@ namespace ASST {
         }
         return result;
     }
-    // removeWhitespaces
-    string removeWhitespaces(const string& source) {
+    // removeWhitespace
+    inline string removeWhitespace(const string& source) {
         string result;
         bool inString = false;
         for (address i = 0; i < source.length(); ++i) {
@@ -64,7 +65,7 @@ namespace ASST {
         return result;
     }
     // indent
-    string indent(const string& source) {
+    inline string indent(const string& source) {
         return stringReplace(source, "\n", "\n    ");
     }
 }

@@ -1,10 +1,5 @@
 {
     "project": "serialize",
     "author": "florian burger (git@fburgerdev)",
-    "namespace": "ASST",
-
-    "tests": [
-        { "name": "test", "files": [ "test.cpp" ] },
-        { "name": "ecs", "files": [ "ecs.cpp" ] }
-    ]
+    "namespace": "ASST"
 }

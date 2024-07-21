@@ -1,12 +1,12 @@
 #pragma once
-#include "json_serializable.hpp"
+#include "json/serializable.hpp"
 
 namespace ASST {
     // JSONSerializable
     template<typename T>
-    struct JSONSerializable<Opt<T>> {
+    struct JSONSerializable<Optional<T>> {
         // toString
-        static string toString(const Opt<T>& value) {
+        static string toString(const Optional<T>& value) {
             if (value.has_value()) {
                 return toJSONString(value.value());
             }
@@ -15,7 +15,7 @@ namespace ASST {
             }
         }
         // fromString
-        static void fromString(const string& str, Opt<T>& value) {
+        static void fromString(const string& str, Optional<T>& value) {
             if (str == "null") {
                 value.reset();
             }
