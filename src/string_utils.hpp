@@ -2,19 +2,6 @@
 #include "common.hpp"
 
 namespace ASST {
-    // stringReplace
-    inline string stringReplace(string source, const string& from, const string& to) {
-        address index = 0;
-        while (true) {
-            index = source.find(from, index);
-            if (index == string::npos) {
-                break;
-            }
-            source.replace(index, from.length(), to);
-            index += to.length();
-        }
-        return source;
-    }
     // split
     inline List<string> split(const string& source, Set<char> delimiters) {
         List<string> result = {""};
@@ -23,7 +10,6 @@ namespace ASST {
         for (address i = 0; i < source.length(); ++i) {
             char ch = source[i];
             if (!inString) {
-
                 if (ch == '[' || ch == '{') {
                     ++scope;
                 }
@@ -41,13 +27,26 @@ namespace ASST {
                 result.back().push_back(ch);
             }
         }
-        if (result.back().empty()) {
-            result.pop_back();
+        if (result.size() == 1 && result.back().empty()) {
+            return {};
         }
         return result;
     }
-    // removeWhitespace
-    inline string removeWhitespace(const string& source) {
+    // replace
+    inline string replace(string source, const string& from, const string& to) {
+        address index = 0;
+        while (true) {
+            index = source.find(from, index);
+            if (index == string::npos) {
+                break;
+            }
+            source.replace(index, from.length(), to);
+            index += to.length();
+        }
+        return source;
+    }
+    // removeWS
+    inline string removeWS(const string& source) {
         string result;
         bool inString = false;
         for (address i = 0; i < source.length(); ++i) {
@@ -55,7 +54,7 @@ namespace ASST {
             if (ch == '"' && (i == 0 || source[i - 1] != '\\')) {
                 inString = !inString;
             }
-            if (ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r' || ch == '\f') {
+            if (ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r' || ch == '\v' || ch == '\f') {
                 continue;
             }
             else {
@@ -66,6 +65,6 @@ namespace ASST {
     }
     // indent
     inline string indent(const string& source) {
-        return stringReplace(source, "\n", "\n    ");
+        return replace(source, "\n", "\n    ");
     }
 }

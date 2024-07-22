@@ -13,20 +13,20 @@ endif
 ifeq ($(config),debug)
   RESCOMP = windres
   TARGETDIR = ../bin/tests/linux_debug
-  TARGET = $(TARGETDIR)/test
+  TARGET = $(TARGETDIR)/error
   OBJDIR = ../bin/tests/linux_debug/obj
   PCH = ../src/common.hpp
   GCH = $(OBJDIR)/$(notdir $(PCH)).gch
-  DEFINES += -DCONFIG_DEBUG -DSYSTEM_LINUX
-  INCLUDES += -I../include -I../src
+  DEFINES += -DCONFIG_DEBUG -DSYSTEM_LINUX -DBEAVER_LOGGING
+  INCLUDES += -I../include -I../src -I../modules/beaver/include
   FORCE_INCLUDE += -include $(OBJDIR)/$(notdir $(PCH))
   ALL_CPPFLAGS += $(CPPFLAGS) -MD -MP $(DEFINES) $(INCLUDES)
   ALL_CFLAGS += $(CFLAGS) $(ALL_CPPFLAGS) -g -Wall -Wextra -Wpedantic
   ALL_CXXFLAGS += $(CXXFLAGS) $(ALL_CPPFLAGS) -g -std=c++20 -Wall -Wextra -Wpedantic
   ALL_RESFLAGS += $(RESFLAGS) $(DEFINES) $(INCLUDES)
-  LIBS += ../lib/debug/libserialize.a
+  LIBS += ../lib/debug/libserialize.a -lbeaver
   LDDEPS += ../lib/debug/libserialize.a
-  ALL_LDFLAGS += $(LDFLAGS) -L../lib/debug
+  ALL_LDFLAGS += $(LDFLAGS) -L../lib/debug -L../modules/beaver/lib/debug
   LINKCMD = $(CXX) -o "$@" $(OBJECTS) $(RESOURCES) $(ALL_LDFLAGS) $(LIBS)
   define PREBUILDCMDS
   endef
@@ -42,18 +42,18 @@ endif
 ifeq ($(config),release)
   RESCOMP = windres
   TARGETDIR = ../bin/tests/linux_release
-  TARGET = $(TARGETDIR)/test
+  TARGET = $(TARGETDIR)/error
   OBJDIR = ../bin/tests/linux_release/obj
-  DEFINES += -DCONFIG_RELEASE -DSYSTEM_LINUX
-  INCLUDES += -I../include -I../src
+  DEFINES += -DCONFIG_RELEASE -DSYSTEM_LINUX -DBEAVER_LOGGING
+  INCLUDES += -I../include -I../src -I../modules/beaver/include
   FORCE_INCLUDE +=
   ALL_CPPFLAGS += $(CPPFLAGS) -MD -MP $(DEFINES) $(INCLUDES)
   ALL_CFLAGS += $(CFLAGS) $(ALL_CPPFLAGS) -O2 -Wall -Wextra -Wpedantic
   ALL_CXXFLAGS += $(CXXFLAGS) $(ALL_CPPFLAGS) -O2 -std=c++20 -Wall -Wextra -Wpedantic
   ALL_RESFLAGS += $(RESFLAGS) $(DEFINES) $(INCLUDES)
-  LIBS += ../lib/release/libserialize.a
+  LIBS += ../lib/release/libserialize.a -lbeaver
   LDDEPS += ../lib/release/libserialize.a
-  ALL_LDFLAGS += $(LDFLAGS) -L../lib/release -s -Ofast
+  ALL_LDFLAGS += $(LDFLAGS) -L../lib/release -L../modules/beaver/lib/release -s -Ofast
   LINKCMD = $(CXX) -o "$@" $(OBJECTS) $(RESOURCES) $(ALL_LDFLAGS) $(LIBS)
   define PREBUILDCMDS
   endef
@@ -69,18 +69,18 @@ endif
 ifeq ($(config),dist)
   RESCOMP = windres
   TARGETDIR = ../bin/tests/linux_dist
-  TARGET = $(TARGETDIR)/test
+  TARGET = $(TARGETDIR)/error
   OBJDIR = ../bin/tests/linux_dist/obj
-  DEFINES += -DCONFIG_DIST -DSYSTEM_LINUX
-  INCLUDES += -I../include -I../src
+  DEFINES += -DCONFIG_DIST -DSYSTEM_LINUX -DBEAVER_LOGGING
+  INCLUDES += -I../include -I../src -I../modules/beaver/include
   FORCE_INCLUDE +=
   ALL_CPPFLAGS += $(CPPFLAGS) -MD -MP $(DEFINES) $(INCLUDES)
   ALL_CFLAGS += $(CFLAGS) $(ALL_CPPFLAGS) -O2 -Wall -Wextra -Wpedantic
   ALL_CXXFLAGS += $(CXXFLAGS) $(ALL_CPPFLAGS) -O2 -std=c++20 -Wall -Wextra -Wpedantic
   ALL_RESFLAGS += $(RESFLAGS) $(DEFINES) $(INCLUDES)
-  LIBS += ../lib/dist/libserialize.a
+  LIBS += ../lib/dist/libserialize.a -lbeaver
   LDDEPS += ../lib/dist/libserialize.a
-  ALL_LDFLAGS += $(LDFLAGS) -L../lib/dist -s -Ofast
+  ALL_LDFLAGS += $(LDFLAGS) -L../lib/dist -L../modules/beaver/lib/dist -s -Ofast
   LINKCMD = $(CXX) -o "$@" $(OBJECTS) $(RESOURCES) $(ALL_LDFLAGS) $(LIBS)
   define PREBUILDCMDS
   endef
@@ -94,7 +94,7 @@ all: prebuild prelink $(TARGET)
 endif
 
 OBJECTS := \
-	$(OBJDIR)/test.o \
+	$(OBJDIR)/error.o \
 
 RESOURCES := \
 
@@ -106,7 +106,7 @@ ifeq (.exe,$(findstring .exe,$(ComSpec)))
 endif
 
 $(TARGET): $(GCH) ${CUSTOMFILES} $(OBJECTS) $(LDDEPS) $(RESOURCES) | $(TARGETDIR)
-	@echo Linking test
+	@echo Linking error
 	$(SILENT) $(LINKCMD)
 	$(POSTBUILDCMDS)
 
@@ -129,7 +129,7 @@ else
 endif
 
 clean:
-	@echo Cleaning test
+	@echo Cleaning error
 ifeq (posix,$(SHELLTYPE))
 	$(SILENT) rm -f  $(TARGET)
 	$(SILENT) rm -rf $(OBJDIR)
@@ -153,7 +153,7 @@ else
 $(OBJECTS): | $(OBJDIR)
 endif
 
-$(OBJDIR)/test.o: ../tests/test.cpp
+$(OBJDIR)/error.o: ../tests/error.cpp
 	@echo $(notdir $<)
 	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
 

@@ -17,16 +17,16 @@ ifeq ($(config),debug)
   OBJDIR = ../bin/linux_debug
   PCH = ../src/common.hpp
   GCH = $(OBJDIR)/$(notdir $(PCH)).gch
-  DEFINES += -DCONFIG_DEBUG -DSYSTEM_LINUX
-  INCLUDES += -I.. -I../src
+  DEFINES += -DBEAVER_LOGGING -DCONFIG_DEBUG -DSYSTEM_LINUX
+  INCLUDES += -I.. -I../src -I../modules/beaver/include
   FORCE_INCLUDE += -include $(OBJDIR)/$(notdir $(PCH))
   ALL_CPPFLAGS += $(CPPFLAGS) -MD -MP $(DEFINES) $(INCLUDES)
   ALL_CFLAGS += $(CFLAGS) $(ALL_CPPFLAGS) -g -Wall -Wextra -Wpedantic
   ALL_CXXFLAGS += $(CXXFLAGS) $(ALL_CPPFLAGS) -g -std=c++20 -Wall -Wextra -Wpedantic
   ALL_RESFLAGS += $(RESFLAGS) $(DEFINES) $(INCLUDES)
-  LIBS +=
+  LIBS += -lbeaver
   LDDEPS +=
-  ALL_LDFLAGS += $(LDFLAGS) -L../lib/debug
+  ALL_LDFLAGS += $(LDFLAGS) -L../lib/debug -L../modules/beaver/lib/debug
   LINKCMD = $(AR) -rcs "$@" $(OBJECTS)
   define PREBUILDCMDS
   endef
@@ -44,16 +44,16 @@ ifeq ($(config),release)
   TARGETDIR = ../lib/release
   TARGET = $(TARGETDIR)/libserialize.a
   OBJDIR = ../bin/linux_release
-  DEFINES += -DCONFIG_RELEASE -DSYSTEM_LINUX
-  INCLUDES += -I.. -I../src
+  DEFINES += -DBEAVER_LOGGING -DCONFIG_RELEASE -DSYSTEM_LINUX
+  INCLUDES += -I.. -I../src -I../modules/beaver/include
   FORCE_INCLUDE +=
   ALL_CPPFLAGS += $(CPPFLAGS) -MD -MP $(DEFINES) $(INCLUDES)
   ALL_CFLAGS += $(CFLAGS) $(ALL_CPPFLAGS) -O2 -Wall -Wextra -Wpedantic
   ALL_CXXFLAGS += $(CXXFLAGS) $(ALL_CPPFLAGS) -O2 -std=c++20 -Wall -Wextra -Wpedantic
   ALL_RESFLAGS += $(RESFLAGS) $(DEFINES) $(INCLUDES)
-  LIBS +=
+  LIBS += -lbeaver
   LDDEPS +=
-  ALL_LDFLAGS += $(LDFLAGS) -L../lib/release -s -Ofast
+  ALL_LDFLAGS += $(LDFLAGS) -L../lib/release -L../modules/beaver/lib/release -s -Ofast
   LINKCMD = $(AR) -rcs "$@" $(OBJECTS)
   define PREBUILDCMDS
   endef
@@ -71,16 +71,16 @@ ifeq ($(config),dist)
   TARGETDIR = ../lib/dist
   TARGET = $(TARGETDIR)/libserialize.a
   OBJDIR = ../bin/linux_dist
-  DEFINES += -DCONFIG_DIST -DSYSTEM_LINUX
-  INCLUDES += -I.. -I../src
+  DEFINES += -DBEAVER_LOGGING -DCONFIG_DIST -DSYSTEM_LINUX
+  INCLUDES += -I.. -I../src -I../modules/beaver/include
   FORCE_INCLUDE +=
   ALL_CPPFLAGS += $(CPPFLAGS) -MD -MP $(DEFINES) $(INCLUDES)
   ALL_CFLAGS += $(CFLAGS) $(ALL_CPPFLAGS) -O2 -Wall -Wextra -Wpedantic
   ALL_CXXFLAGS += $(CXXFLAGS) $(ALL_CPPFLAGS) -O2 -std=c++20 -Wall -Wextra -Wpedantic
   ALL_RESFLAGS += $(RESFLAGS) $(DEFINES) $(INCLUDES)
-  LIBS +=
+  LIBS += -lbeaver
   LDDEPS +=
-  ALL_LDFLAGS += $(LDFLAGS) -L../lib/dist -s -Ofast
+  ALL_LDFLAGS += $(LDFLAGS) -L../lib/dist -L../modules/beaver/lib/dist -s -Ofast
   LINKCMD = $(AR) -rcs "$@" $(OBJECTS)
   define PREBUILDCMDS
   endef

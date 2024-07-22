@@ -1,5 +1,9 @@
 {
     "project": "serialize",
     "author": "florian burger (git@fburgerdev)",
-    "namespace": "ASST"
+    "namespace": "ASST",
+
+    "libraries": [
+        { "name": "beaver", "defines": [ "BEAVER_LOGGING" ]}
+    ]
 }

@@ -1,4 +1,15 @@
-#include "type_string.hpp"
+#include "serialize.hpp"
+
+// Test
+struct Test {};
+namespace ASST {
+    template<>
+    struct TypeString<Test> {
+        string operator()() const {
+            return "Test";
+        }
+    };
+}
 
 using namespace ASST;
 int main() {
@@ -8,5 +19,6 @@ int main() {
     cout << TypeString<Map<int, List<string>>>()() << endl;
     cout << TypeString<Map<int, float>>()() << endl;
     cout << TypeString<Tuple<int, string, Map<int, float>>>()() << endl;
+    cout << TypeString<Test>()() << endl;
     return EXIT_SUCCESS;
 }

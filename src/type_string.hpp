@@ -41,15 +41,51 @@ namespace ASST {
         }
     };
     template<>
-    struct TypeString<int> {
+    struct TypeString<signed char> {
         string operator()() const {
-            return "int";
+            return "signed char";
         }
     };
     template<>
-    struct TypeString<uint> {
+    struct TypeString<unsigned char> {
         string operator()() const {
-            return "uint";
+            return "unsigned char";
+        }
+    };
+    template<>
+    struct TypeString<int16_t> {
+        string operator()() const {
+            return "int16_t";
+        }
+    };
+    template<>
+    struct TypeString<uint16_t> {
+        string operator()() const {
+            return "uint16_t";
+        }
+    };
+    template<>
+    struct TypeString<int32_t> {
+        string operator()() const {
+            return "int32_t";
+        }
+    };
+    template<>
+    struct TypeString<uint32_t> {
+        string operator()() const {
+            return "uint32_t";
+        }
+    };
+    template<>
+    struct TypeString<int64_t> {
+        string operator()() const {
+            return "int64_t";
+        }
+    };
+    template<>
+    struct TypeString<uint64_t> {
+        string operator()() const {
+            return "uint64_t";
         }
     };
     template<>

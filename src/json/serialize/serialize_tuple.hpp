@@ -24,6 +24,7 @@ namespace ASST {
         // fromStringVariant
         template<address Index>
         static void fromStringTuple(const JSONList& list, Tuple<TArgs...>& value) {
+            // ASSERT_JSON_DESERIALIZE((list.length() == sizeof...(TArgs)), list.toString(), TypeString<Tuple<TArgs...>>()());
             using Type = std::tuple_element_t<Index, Tuple<TArgs...>>;
             fromJSONString<Type>(list.at(Index), std::get<Index>(value));
             if constexpr (Index + 1 < sizeof...(TArgs)) {

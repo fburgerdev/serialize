@@ -1,6 +1,8 @@
 #pragma once
 #include "json.hpp"
-#include "string_utils.hpp"
+#include "logging.hpp"
+#include "type_string.hpp"
+#include "trace.hpp"
 
 namespace ASST {
     // JSONSerializable
@@ -23,4 +25,6 @@ namespace ASST {
         fromJSONString<T>(str, value);
         return value;
     }
+
+    #define ASSERT_JSON_DESERIALIZE(COND, STR, TYPE) ASSERT_MSG(COND, "JSON deserialization failed: expected '{}' to be of type '{}'", STR, TYPE); 
 }

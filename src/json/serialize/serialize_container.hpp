@@ -68,23 +68,36 @@ namespace ASST {
         static string toString(const T& value) {
             JSONList list;
             for (const auto& item : value) {
-                list.push(toJSONString<typename T::value_type>(item));
+                if constexpr (isMap<T>) {
+                    using Key = std::remove_const_t<typename T::value_type::first_type>;
+                    using Value = typename T::value_type::second_type;
+                    list.push(toJSONString<Pair<Key, Value>>(item));
+                }
+                else if constexpr (isHashMap<T>) {
+                    using Key = std::remove_const_t<typename T::value_type::first_type>;
+                    using Value = typename T::value_type::second_type;
+                    list.push(toJSONString<Pair<Key, Value>>(item));
+                }
+                else {
+                    list.push(toJSONString<typename T::value_type>(item));
+                }
             }
             return list.toString();
         }
 
         // fromString
         static void fromString(const string& str, T& value) {
+            // ASSERT_JSON_DESERIALIZE(str.length() >= 2 && (str.front() == '[' && str.back() == ']'), str, (TypeString<T>()()));
             List<string> splitted = split(str.substr(1, str.length() - 2), { ',' });
             for (address index = 0; index < splitted.size(); ++index) {
                 if constexpr (isMap<T>) {
                     using Key = std::remove_const_t<typename T::value_type::first_type>;
-                    using Value = std::remove_const_t<typename T::value_type::second_type>;
+                    using Value = typename T::value_type::second_type;
                     value.insert(fromJSONString<Pair<Key, Value>>(splitted[index]));
                 }
                 else if constexpr (isHashMap<T>) {
                     using Key = std::remove_const_t<typename T::value_type::first_type>;
-                    using Value = std::remove_const_t<typename T::value_type::second_type>;
+                    using Value = typename T::value_type::second_type;
                     value.insert(fromJSONString<Pair<Key, Value>>(splitted[index]));
                 }
                 else {

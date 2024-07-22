@@ -2,3 +2,6 @@
 	path = cpp-library
 	url = https://github.com/fburgerdev/cpp-library.git
 	branch = dev
+[submodule "modules/beaver"]
+	path = modules/beaver
+	url = https://github.com/fburgerdev/beaver.git

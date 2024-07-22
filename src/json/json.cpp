@@ -1,11 +1,14 @@
 #include "json.hpp"
+#include "serializable.hpp"
 #include "string_utils.hpp"
 
 namespace ASST {
     //* JSONObject
     // constructor
     JSONObject::JSONObject(const string& str) {
+        // ASSERT_MSG(str.length() >= 2 && (str.front() == '{' && str.back() == '}'), "JSON deserialization failed: expected '{}' to be a json object", str);
         List<string> splitted = split(str.substr(1, str.length() - 2), { ':', ',' });
+        // ASSERT_MSG(splitted.size() % 2 == 0, "JSON deserialization failed: expected '{}' to be a json object", str);
         for (address i = 0; i < splitted.size(); i += 2) {
             m_list.emplace_back(splitted[i].substr(1, splitted[i].length() - 2), splitted[i + 1]);
         }
@@ -19,7 +22,7 @@ namespace ASST {
                 return entryValue;
             }
         }
-        throw std::out_of_range("Key not found");
+        // ASSERT_MSG(false, "JSON deserialization failed: expected json object '{}' to have key '{}'", toString(), key);
     }
     const string& JSONObject::at(const string& key) const {
         for (const auto& [entryKey, entryValue] : m_list) {
@@ -27,7 +30,7 @@ namespace ASST {
                 return entryValue;
             }
         }
-        throw std::out_of_range("Key not found");
+        // ASSERT_MSG(false, "JSON deserialization failed: expected json object '{}' to have key '{}'", toString(), key);
     }
     // :: operator[]
     string& JSONObject::operator[](const string& key) {
@@ -71,6 +74,7 @@ namespace ASST {
     //* JSONList
     // constructor
     JSONList::JSONList(const string& str) {
+        // ASSERT_MSG(str.length() >= 2 && (str.front() == '[' && str.back() == ']'), "JSON deserialization failed: expected {} to be a json list", str);
         m_list = split(str.substr(1, str.length() - 2), { ',' });
     }
     // access
@@ -93,7 +97,11 @@ namespace ASST {
     auto JSONList::size() const {
         return m_list.size();
     }
-    
+    // :: length
+    address JSONList::length() const {
+        return m_list.size();
+    }
+
     // isMultiline
     bool JSONList::isMultiline() const {
         for (const string& item : m_list) {

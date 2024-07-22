@@ -4,7 +4,7 @@ ROOT = ".."
 -- workspace
 workspace "serialize"
    -- startproject
-   startproject "type_string"
+   startproject "error"
    -- cpp
    language "C++"
    cppdialect "C++20"
@@ -13,7 +13,7 @@ workspace "serialize"
    debugger "GDB"
 
    -- defines
-   defines {  }
+   defines { "BEAVER_LOGGING",  }
 
    -- dependancies
    -- :: directories
@@ -23,7 +23,7 @@ workspace "serialize"
       ROOT .. "/vendor/*/lib/%{cfg.buildcfg}"
    }
    -- :: libraries
-   links {  --[[ INSERT ADDITIONAL LINKS HERE ]] }
+   links { "beaver",  --[[ INSERT ADDITIONAL LINKS HERE ]] }
 
    -- config
    configurations { "debug", "release", "dist" }
@@ -79,8 +79,8 @@ project "serialize"
    -- binaries
    targetdir(ROOT .. "/lib/%{cfg.buildcfg}")
    objdir(ROOT .. "/bin/%{cfg.system}_%{cfg.buildcfg}")
--- tests :: type_string
-project "type_string"
+-- tests :: error
+project "error"
    -- console
    kind "ConsoleApp"
 
@@ -93,15 +93,15 @@ project "type_string"
    }
    -- files
    files {
-      ROOT .. "/tests/type_string.cpp",
+      ROOT .. "/tests/error.cpp",
       --[[ INSERT ADDITIONAL FILES HERE ]]
    }
 
    -- defines
-   defines {  }
+   defines { "BEAVER_LOGGING" }
 
    -- libraries
-   links { "serialize",  --[[ INSERT ADDITIONAL LINKS HERE ]] }
+   links { "serialize", "beaver",  --[[ INSERT ADDITIONAL LINKS HERE ]] }
 
    -- binaries
    targetdir(ROOT .. "/bin/tests/%{cfg.system}_%{cfg.buildcfg}")

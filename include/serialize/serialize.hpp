@@ -26,6 +26,7 @@
 namespace ASST {
     namespace stdr = std::ranges;
     using address = std::size_t;
+    using schar = signed char;
     using uchar = unsigned char;
     using int8 = std::int8_t;
     using int16 = std::int16_t;
@@ -68,11 +69,11 @@ namespace ASST {
     using std::move;
     template<class T, class... Args>
     auto makeUniquePtr(Args&&... args) {
-        return std::make_unique<T>(forward(args)...);
+        return std::make_unique<T>(forward<Args...>(args)...);
     }
     template<class T, class... Args>
     auto makeSharedPtr(Args&&... args) {
-        return std::make_shared<T>(forward(args)...);
+        return std::make_shared<T>(forward<Args...>(args)...);
     }
     template<typename T>
     using UniquePtr = std::unique_ptr<T>;
@@ -109,20 +110,21 @@ namespace ASST {
     using atomic_uint32 = std::atomic_uint32_t;
     using atomic_uint64 = std::atomic_uint64_t;
 }
+// #include "logging.hpp" (HPPMERGE)
+#if defined(BEAVER_LOGGING)
+#include "beaver/beaver.hpp"
+#else
+#define LOG_TRACE(...)
+#define LOG_DEBUG(...)
+#define LOG_INFO(...)
+#define LOG_WARN(...)
+#define LOG_ERROR(...)
+#define LOG_FATAL(...)
+#define ASSERT(...)
+#define ASSERT_MSG(...)
+#endif
 // #include "string_utils.hpp" (HPPMERGE)
 namespace ASST {
-    inline string stringReplace(string source, const string& from, const string& to) {
-        address index = 0;
-        while (true) {
-            index = source.find(from, index);
-            if (index == string::npos) {
-                break;
-            }
-            source.replace(index, from.length(), to);
-            index += to.length();
-        }
-        return source;
-    }
     inline List<string> split(const string& source, Set<char> delimiters) {
         List<string> result = {""};
         int scope = 0;
@@ -147,13 +149,26 @@ namespace ASST {
                 result.back().push_back(ch);
             }
         }
-        if (result.back().empty()) {
-            result.pop_back();
+        if (result.size() == 1 && result.back().empty()) {
+            return {};
         }
         return result;
     }
-    // removeWhitespace
-    inline string removeWhitespace(const string& source) {
+    // replace
+    inline string replace(string source, const string& from, const string& to) {
+        address index = 0;
+        while (true) {
+            index = source.find(from, index);
+            if (index == string::npos) {
+                break;
+            }
+            source.replace(index, from.length(), to);
+            index += to.length();
+        }
+        return source;
+    }
+    // removeWS
+    inline string removeWS(const string& source) {
         string result;
         bool inString = false;
         for (address i = 0; i < source.length(); ++i) {
@@ -161,7 +176,7 @@ namespace ASST {
             if (ch == '"' && (i == 0 || source[i - 1] != '\\')) {
                 inString = !inString;
             }
-            if (ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r' || ch == '\f') {
+            if (ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r' || ch == '\v' || ch == '\f') {
                 continue;
             }
             else {
@@ -171,7 +186,7 @@ namespace ASST {
         return result;
     }
     inline string indent(const string& source) {
-        return stringReplace(source, "\n", "\n    ");
+        return replace(source, "\n", "\n    ");
     }
 }
 // #include "json.hpp" (HPPMERGE)
@@ -202,9 +217,215 @@ namespace ASST {
         string& operator[](address index);
         void push(const string& value);
         auto size() const;
+        address length() const;
         bool isMultiline() const;
         string toString() const;
     private:
+        List<string> m_list;
+    };
+}
+// #include "type_string.hpp" (HPPMERGE)
+namespace ASST {
+    template<typename T>
+    struct TypeString {
+        string operator()() const {
+            return typeid(T).name();
+        }
+    };
+    template<typename TFirst, typename... TRest>
+    inline string JoinedTypeString() {
+        if constexpr (sizeof...(TRest) > 0) {
+            return TypeString<TFirst>()() + "," + JoinedTypeString<TRest...>();
+        }
+        else {
+            return TypeString<TFirst>()();
+        }
+    }
+    template<>
+    struct TypeString<void> {
+        string operator()() const {
+            return "void";
+        }
+    };
+    template<>
+    struct TypeString<bool> {
+        string operator()() const {
+            return "bool";
+        }
+    };
+    template<>
+    struct TypeString<char> {
+        string operator()() const {
+            return "char";
+        }
+    };
+    template<>
+    struct TypeString<signed char> {
+        string operator()() const {
+            return "signed char";
+        }
+    };
+    template<>
+    struct TypeString<unsigned char> {
+        string operator()() const {
+            return "unsigned char";
+        }
+    };
+    template<>
+    struct TypeString<int16_t> {
+        string operator()() const {
+            return "int16_t";
+        }
+    };
+    template<>
+    struct TypeString<uint16_t> {
+        string operator()() const {
+            return "uint16_t";
+        }
+    };
+    template<>
+    struct TypeString<int32_t> {
+        string operator()() const {
+            return "int32_t";
+        }
+    };
+    template<>
+    struct TypeString<uint32_t> {
+        string operator()() const {
+            return "uint32_t";
+        }
+    };
+    template<>
+    struct TypeString<int64_t> {
+        string operator()() const {
+            return "int64_t";
+        }
+    };
+    template<>
+    struct TypeString<uint64_t> {
+        string operator()() const {
+            return "uint64_t";
+        }
+    };
+    template<>
+    struct TypeString<float> {
+        string operator()() const {
+            return "float";
+        }
+    };
+    template<>
+    struct TypeString<double> {
+        string operator()() const {
+            return "double";
+        }
+    };
+    template<>
+    struct TypeString<string> {
+        string operator()() const {
+            return "string";
+        }
+    };
+    template<typename T, address N>
+    struct TypeString<Array<T, N>> {
+        string operator()() const {
+            return "Array<" + TypeString<T>()() + "," + std::to_string(N) + ">";
+        }
+    };
+    template<typename T>
+    struct TypeString<List<T>> {
+        string operator()() const {
+            return "List<" + TypeString<T>()() + ">";
+        }
+    };
+    template<typename T>
+    struct TypeString<Stack<T>> {
+        string operator()() const {
+            return "Stack<" + TypeString<T>()() + ">";
+        }
+    };
+    template<typename T>
+    struct TypeString<Queue<T>> {
+        string operator()() const {
+            return "Queue<" + TypeString<T>()() + ">";
+        }
+    };
+    template<typename T>
+    struct TypeString<Deque<T>> {
+        string operator()() const {
+            return "Deque<" + TypeString<T>()() + ">";
+        }
+    };
+    template<typename T>
+    struct TypeString<Set<T>> {
+        string operator()() const {
+            return "Set<" + TypeString<T>()() + ">";
+        }
+    };
+    template<typename K, typename V>
+    struct TypeString<Map<K, V>> {
+        string operator()() const {
+            return "Map<" + TypeString<K>()() + "," + TypeString<V>()() + ">";
+        }
+    };
+    template<typename T>
+    struct TypeString<HashSet<T>> {
+        string operator()() const {
+            return "HashSet<" + TypeString<T>()() + ">";
+        }
+    };
+    template<typename K, typename V>
+    struct TypeString<HashMap<K, V>> {
+        string operator()() const {
+            return "HashMap<" + TypeString<K>()() + "," + TypeString<V>()() + ">";
+        }
+    };
+    template<typename T>
+    struct TypeString<Optional<T>> {
+        string operator()() const {
+            return "Optional<" + TypeString<T>()() + ">";
+        }
+    };
+    template<typename T1, typename T2>
+    struct TypeString<Pair<T1, T2>> {
+        string operator()() const {
+            return "Pair<" + TypeString<T1>()() + "," + TypeString<T2>()() + ">";
+        }
+    };
+    template<typename... TArgs>
+    struct TypeString<Tuple<TArgs...>> {
+        string operator()() const {
+            return "Tuple<" + JoinedTypeString<TArgs...>() + ">";
+        }
+    };
+    template<typename... TArgs>
+    struct TypeString<Variant<TArgs...>> {
+        string operator()() const {
+            return "Variant<" + JoinedTypeString<TArgs...>() + ">";
+        }
+    };
+}
+// #include "trace.hpp" (HPPMERGE)
+namespace ASST {
+    class SerializationTrace {
+    public:
+        SerializationTrace(const string& str, const string& type) {
+            m_error = "JSON deserialization failed: expected '" + str + "' to be of type '" + type +  "'";
+        }
+        void pushTrace(const string& str, const string& type) {
+            m_list.emplace_back("in '" + str + "' of type '" + type + "'");
+        }
+        string toString() const {
+            ostrstream sstream;
+            sstream << m_error << endl;
+            sstream << "Stack trace:" << endl;  
+            sstream << "---" << endl;
+            for (const string& str : m_list) {
+                sstream << str << endl;
+            }
+            return sstream.str();
+        }
+    private:
+        string m_error;
         List<string> m_list;
     };
 }
@@ -226,6 +447,7 @@ namespace ASST {
         fromJSONString<T>(str, value);
         return value;
     }
+    #define ASSERT_JSON_DESERIALIZE(COND, STR, TYPE) ASSERT_MSG(COND, "JSON deserialization failed: expected '{}' to be of type '{}'", STR, TYPE); 
 }
 // #include "serializer.hpp" (HPPMERGE)
 namespace ASST {
@@ -238,7 +460,14 @@ namespace ASST {
         template<typename T>
         static T deserialize(const string& filepath) {
             string source = (strstream() << ifstream(filepath).rdbuf()).str();
-            return fromJSONString<T>(removeWhitespace(source));
+            try {
+                T data = fromJSONString<T>(removeWS(source));
+                return data;
+            }
+            catch (const SerializationTrace& trace) {
+                LOG_FATAL(trace.toString());
+                throw;
+            }
         }
     };
 }
@@ -253,22 +482,38 @@ namespace ASST {
             value = (str == "true");
         }
     };
-    template<>
-    struct JSONSerializable<char> {
-        static string toString(const char& value) {
+    template<typename T> requires std::same_as<T, char>
+    struct JSONSerializable<T> {
+        static string toString(const T& value) {
             return toJSONString<string>(string({ value }));
         }
-        static void fromString(const string& str, char& value) {
+        static void fromString(const string& str, T& value) {
             value = fromJSONString<string>(str).front();
         }
     };
-    template<typename T> requires (std::integral<T> || std::floating_point<T>)
+    template<typename T> requires ((std::integral<T> || std::floating_point<T>) && !std::same_as<T, char>)
     struct JSONSerializable<T> {
         static string toString(const T& value) {
-            return (ostrstream() << value).str();
+            if constexpr (std::is_same_v<T, schar>) {
+                return (ostrstream() << static_cast<int>(value)).str();
+            }
+            else if constexpr (std::is_same_v<T, uchar>) {
+                return (ostrstream() << static_cast<uint>(value)).str();
+            }
+            else {
+                return (ostrstream() << value).str();
+            }
         }
         static void fromString(const string& str, T& value) {
-            istrstream(str) >> value;
+            if constexpr (std::is_floating_point_v<T>) {
+                value = static_cast<T>(std::stold(str));
+            }
+            else if constexpr (std::is_unsigned_v<T>) {
+                value = static_cast<T>(std::stoull(str));
+            }
+            else if constexpr (std::is_signed_v<T>) {
+                value = static_cast<T>(std::stoll(str));
+            }
         }
     };
 }
@@ -291,14 +536,14 @@ namespace ASST {
         static string toString(const T& value) {
             string str(value);
             for (const auto& [from, to] : EscapeSequences) {
-                str = stringReplace(str, from, to);
+                str = replace(str, from, to);
             }
             return "\"" + str + "\"";
         }
         static void fromString(const string& str, T& value) {
             value = str.substr(1, str.length() - 2);
             for (const auto& [to, from] : EscapeSequences) {
-                value = stringReplace(value, from, to);
+                value = replace(value, from, to);
             }
         }
     };
@@ -309,8 +554,8 @@ namespace ASST {
     struct JSONSerializable<Pair<T1, T2>> {
         static string toString(const Pair<T1, T2>& value) {
             JSONList list;
-            list.push(indent(toJSONString<T1>(value.first)));
-            list.push(indent(toJSONString<T2>(value.second)));
+            list.push(toJSONString<T1>(value.first));
+            list.push(toJSONString<T2>(value.second));
             return list.toString();
         }
         static void fromString(const string& str, Pair<T1, T2>& value) {
@@ -371,7 +616,19 @@ namespace ASST {
         static string toString(const T& value) {
             JSONList list;
             for (const auto& item : value) {
-                list.push(toJSONString<typename T::value_type>(item));
+                if constexpr (isMap<T>) {
+                    using Key = std::remove_const_t<typename T::value_type::first_type>;
+                    using Value = typename T::value_type::second_type;
+                    list.push(toJSONString<Pair<Key, Value>>(item));
+                }
+                else if constexpr (isHashMap<T>) {
+                    using Key = std::remove_const_t<typename T::value_type::first_type>;
+                    using Value = typename T::value_type::second_type;
+                    list.push(toJSONString<Pair<Key, Value>>(item));
+                }
+                else {
+                    list.push(toJSONString<typename T::value_type>(item));
+                }
             }
             return list.toString();
         }
@@ -380,12 +637,12 @@ namespace ASST {
             for (address index = 0; index < splitted.size(); ++index) {
                 if constexpr (isMap<T>) {
                     using Key = std::remove_const_t<typename T::value_type::first_type>;
-                    using Value = std::remove_const_t<typename T::value_type::second_type>;
+                    using Value = typename T::value_type::second_type;
                     value.insert(fromJSONString<Pair<Key, Value>>(splitted[index]));
                 }
                 else if constexpr (isHashMap<T>) {
                     using Key = std::remove_const_t<typename T::value_type::first_type>;
-                    using Value = std::remove_const_t<typename T::value_type::second_type>;
+                    using Value = typename T::value_type::second_type;
                     value.insert(fromJSONString<Pair<Key, Value>>(splitted[index]));
                 }
                 else {
@@ -515,150 +772,6 @@ namespace ASST {
         }
         static void fromString(const string& str, Tuple<TArgs...>& value) {
             fromStringTuple<0>(JSONList(str), value);
-        }
-    };
-}
-// #include "type_string.hpp" (HPPMERGE)
-namespace ASST {
-    template<typename T>
-    struct TypeString {
-        string operator()() const {
-            return typeid(T).name();
-        }
-    };
-    template<typename TFirst, typename... TRest>
-    inline string JoinedTypeString() {
-        if constexpr (sizeof...(TRest) > 0) {
-            return TypeString<TFirst>()() + "," + JoinedTypeString<TRest...>();
-        }
-        else {
-            return TypeString<TFirst>()();
-        }
-    }
-    template<>
-    struct TypeString<void> {
-        string operator()() const {
-            return "void";
-        }
-    };
-    template<>
-    struct TypeString<bool> {
-        string operator()() const {
-            return "bool";
-        }
-    };
-    template<>
-    struct TypeString<char> {
-        string operator()() const {
-            return "char";
-        }
-    };
-    template<>
-    struct TypeString<int> {
-        string operator()() const {
-            return "int";
-        }
-    };
-    template<>
-    struct TypeString<uint> {
-        string operator()() const {
-            return "uint";
-        }
-    };
-    template<>
-    struct TypeString<float> {
-        string operator()() const {
-            return "float";
-        }
-    };
-    template<>
-    struct TypeString<double> {
-        string operator()() const {
-            return "double";
-        }
-    };
-    template<>
-    struct TypeString<string> {
-        string operator()() const {
-            return "string";
-        }
-    };
-    template<typename T, address N>
-    struct TypeString<Array<T, N>> {
-        string operator()() const {
-            return "Array<" + TypeString<T>()() + "," + std::to_string(N) + ">";
-        }
-    };
-    template<typename T>
-    struct TypeString<List<T>> {
-        string operator()() const {
-            return "List<" + TypeString<T>()() + ">";
-        }
-    };
-    template<typename T>
-    struct TypeString<Stack<T>> {
-        string operator()() const {
-            return "Stack<" + TypeString<T>()() + ">";
-        }
-    };
-    template<typename T>
-    struct TypeString<Queue<T>> {
-        string operator()() const {
-            return "Queue<" + TypeString<T>()() + ">";
-        }
-    };
-    template<typename T>
-    struct TypeString<Deque<T>> {
-        string operator()() const {
-            return "Deque<" + TypeString<T>()() + ">";
-        }
-    };
-    template<typename T>
-    struct TypeString<Set<T>> {
-        string operator()() const {
-            return "Set<" + TypeString<T>()() + ">";
-        }
-    };
-    template<typename K, typename V>
-    struct TypeString<Map<K, V>> {
-        string operator()() const {
-            return "Map<" + TypeString<K>()() + "," + TypeString<V>()() + ">";
-        }
-    };
-    template<typename T>
-    struct TypeString<HashSet<T>> {
-        string operator()() const {
-            return "HashSet<" + TypeString<T>()() + ">";
-        }
-    };
-    template<typename K, typename V>
-    struct TypeString<HashMap<K, V>> {
-        string operator()() const {
-            return "HashMap<" + TypeString<K>()() + "," + TypeString<V>()() + ">";
-        }
-    };
-    template<typename T>
-    struct TypeString<Optional<T>> {
-        string operator()() const {
-            return "Optional<" + TypeString<T>()() + ">";
-        }
-    };
-    template<typename T1, typename T2>
-    struct TypeString<Pair<T1, T2>> {
-        string operator()() const {
-            return "Pair<" + TypeString<T1>()() + "," + TypeString<T2>()() + ">";
-        }
-    };
-    template<typename... TArgs>
-    struct TypeString<Tuple<TArgs...>> {
-        string operator()() const {
-            return "Tuple<" + JoinedTypeString<TArgs...>() + ">";
-        }
-    };
-    template<typename... TArgs>
-    struct TypeString<Variant<TArgs...>> {
-        string operator()() const {
-            return "Variant<" + JoinedTypeString<TArgs...>() + ">";
         }
     };
 }

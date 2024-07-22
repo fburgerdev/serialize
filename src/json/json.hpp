@@ -48,7 +48,9 @@ namespace ASST {
         // :: push
         void push(const string& value);
         auto size() const;
-        
+        // :: length
+        address length() const;
+
         // isMultiline
         bool isMultiline() const;
         // toString

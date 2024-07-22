@@ -1,5 +1,6 @@
 #pragma once
 #include "common.hpp"
+#include "logging.hpp"
 
 // JSON
 #include "json/serializer.hpp"

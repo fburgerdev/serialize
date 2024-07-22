@@ -1,5 +1,6 @@
 #pragma once
 #include "serializable.hpp"
+#include "trace.hpp"
 
 namespace ASST {
     // JSONSerializer
@@ -14,7 +15,14 @@ namespace ASST {
         template<typename T>
         static T deserialize(const string& filepath) {
             string source = (strstream() << ifstream(filepath).rdbuf()).str();
-            return fromJSONString<T>(removeWhitespace(source));
+            try {
+                T data = fromJSONString<T>(removeWS(source));
+                return data;
+            }
+            catch (const SerializationTrace& trace) {
+                LOG_FATAL(trace.toString());
+                throw;
+            }
         }
     };
 }

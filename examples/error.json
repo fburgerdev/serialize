@@ -1,0 +1,8 @@
+{
+    "tag": "HALLO",
+    "value": 42,
+    "opt": null,
+    "variant": [ "float", 1 ],
+    "tuple": [ 1, 2 ],
+    "list": [1, ERROR]
+}
